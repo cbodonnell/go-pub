@@ -29,64 +29,65 @@ type JWTClaims struct {
 
 // WebFinger struct
 type WebFinger struct {
-	Subject string   `json:"subject"`
-	Aliases []string `json:"aliases"`
-	Links   []Link   `json:"links"`
+	Subject string          `json:"subject"`
+	Aliases []string        `json:"aliases"`
+	Links   []WebFingerLink `json:"links"`
 }
 
 // Link struct
-type Link struct {
+type WebFingerLink struct {
 	Rel  string `json:"rel"`
 	Type string `json:"type"`
 	Href string `json:"href"`
 }
 
-// TODO: Can inherit @context and stuff?
-
-// Actor struct
-type Actor struct {
-	Context []string `json:"@context"`
-	Id      string   `json:"id"`
-	Type    string   `json:"type"`
-	Inbox   string   `json:"inbox"`
-	Outbox  string   `json:"outbox"`
-}
-
-// Mailbox struct
-type Mailbox struct {
-	Context    []string `json:"@context"`
-	Id         string   `json:"id"`
-	Type       string   `json:"type"`
-	TotalItems int      `json:"totalItems"`
-	First      string   `json:"first"`
-	Last       string   `json:"last"`
-}
-
-// Mailbox struct
-type MailboxPage struct {
-	Context      []string   `json:"@context"`
-	Id           string     `json:"id"`
-	Type         string     `json:"type"`
-	PartOf       string     `json:"partOf"`
-	OrderedItems []Activity `json:"orderedItems"`
-}
-
-type Activity struct {
-	Context []string `json:"@context"`
-	Id      string   `json:"id"`
-	Type    string   `json:"type"`
-	Actor   string   `json:"name"`
-	To      []string `json:"to"`
-	Object  Object   `json:"object"`
-}
-
-// TODO: Make a generic type and inherit
+// Object struct
 type Object struct {
 	Context []string `json:"@context"`
 	Id      string   `json:"id"`
 	Type    string   `json:"type"`
-	// Actor		string		`json:"actor"`
-	Name      string `json:"name"`
+	Name    string   `json:"name"`
+}
+
+// Actor struct
+type Actor struct {
+	Object
+	Inbox  string `json:"inbox"`
+	Outbox string `json:"outbox"`
+}
+
+// Mailbox struct
+type Mailbox struct {
+	Object
+	TotalItems int    `json:"totalItems"`
+	First      string `json:"first"`
+	Last       string `json:"last"`
+}
+
+// Mailbox struct
+type MailboxPage struct {
+	Object
+	PartOf       string     `json:"partOf"`
+	OrderedItems []Activity `json:"orderedItems"`
+}
+
+// Activity struct
+type Activity struct {
+	Object
+	Actor       string   `json:"actor"`
+	To          []string `json:"to"`
+	ChildObject Audio    `json:"object"`
+}
+
+// Link struct
+type Link struct {
+	Object
+	Href      string `json:"href"`
 	MediaType string `json:"mediaType"`
-	Content   string `json:"content"`
+}
+
+// Audio struct
+type Audio struct {
+	Object
+	Url Link `json:"url"`
 }

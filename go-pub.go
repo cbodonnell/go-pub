@@ -34,15 +34,18 @@ func main() {
 	port := config.Port
 	fmt.Println(fmt.Sprintf("Serving on port %d", port))
 
+	// CORS in dev
 	if ENV == "dev" {
 		cors := cors.New(cors.Options{
 			AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
 			AllowCredentials: true,
 		})
 		r.Use(cors.Handler)
-
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 	}
 
+	// TLS
+	if config.SSLCert == "" {
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
+	}
 	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", port), config.SSLCert, config.SSLKey, r))
 }

@@ -20,6 +20,7 @@ func webFinger(w http.ResponseWriter, r *http.Request) {
 		orig = orig[5:]
 	}
 
+	// webfinger := getWebFingerByAcct
 	name := orig
 	idx := strings.LastIndexByte(name, '/')
 	if idx != -1 {
@@ -56,8 +57,8 @@ func webFinger(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
 		},
 		Links: append(
-			[]Link{},
-			Link{
+			[]WebFingerLink{},
+			WebFingerLink{
 				Rel:  "self",
 				Type: "application/activity+json",
 				Href: fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
@@ -71,15 +72,17 @@ func webFinger(w http.ResponseWriter, r *http.Request) {
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	// user, err := getUserByName(name)
 
+	// actor, err := getActorByName(name)
 	actor := Actor{
-		Context: []string{
-			"https://www.w3.org/ns/activitystreams",
-			"https://w3id.org/security/v1",
+		Object: Object{
+			Context: []string{
+				"https://www.w3.org/ns/activitystreams",
+				"https://w3id.org/security/v1",
+			},
+			Id:   fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
+			Type: "Person",
 		},
-		Id:     fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
-		Type:   "Person",
 		Inbox:  fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
 		Outbox: fmt.Sprintf("https://%s/%s/%s/outbox", config.ServerName, config.UserSep, name),
 	}
@@ -90,16 +93,18 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 func getInbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	// inbox, err := getInboxByName(name)
 
+	// inbox, err := getInboxByName(name)
 	inbox := Mailbox{
-		Context: []string{
-			"https://www.w3.org/ns/activitystreams",
-			"https://w3id.org/security/v1",
+		Object: Object{
+			Context: []string{
+				"https://www.w3.org/ns/activitystreams",
+				"https://w3id.org/security/v1",
+			},
+			Id:   fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
+			Type: "OrderedCollection",
 		},
-		Id:         fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
-		Type:       "OrderedCollection",
-		TotalItems: 100,
+		TotalItems: 1,
 		First:      fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
 		Last:       fmt.Sprintf("https://%s/%s/%s/inbox?min_id=0", config.ServerName, config.UserSep, name),
 	}
@@ -115,13 +120,15 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 	if page != "true" {
 		// outbox, err := getOutboxByName(name)
 		outbox := Mailbox{
-			Context: []string{
-				"https://www.w3.org/ns/activitystreams",
-				"https://w3id.org/security/v1",
+			Object: Object{
+				Context: []string{
+					"https://www.w3.org/ns/activitystreams",
+					"https://w3id.org/security/v1",
+				},
+				Id:   fmt.Sprintf("https://%s/%s/%s/outbox", config.ServerName, config.UserSep, name),
+				Type: "OrderedCollection",
 			},
-			Id:         fmt.Sprintf("https://%s/%s/%s/outbox", config.ServerName, config.UserSep, name),
-			Type:       "OrderedCollection",
-			TotalItems: 100,
+			TotalItems: 1,
 			First:      fmt.Sprintf("https://%s/%s/%s/outbox?page=true", config.ServerName, config.UserSep, name),
 			Last:       fmt.Sprintf("https://%s/%s/%s/outbox?min_id=0&page=true", config.ServerName, config.UserSep, name),
 		}
@@ -131,35 +138,53 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// outbox, err := getOutboxPageByName(name)
 		outboxPage := MailboxPage{
-			Context: []string{
-				"https://www.w3.org/ns/activitystreams",
-				"https://w3id.org/security/v1",
+			Object: Object{
+				Context: []string{
+					"https://www.w3.org/ns/activitystreams",
+					"https://w3id.org/security/v1",
+				},
+				Id:   fmt.Sprintf("https://%s/%s/%s/outbox?page=true", config.ServerName, config.UserSep, name),
+				Type: "OrderedCollectionPage",
 			},
-			Id:     fmt.Sprintf("https://%s/%s/%s/outbox?page=true", config.ServerName, config.UserSep, name),
-			Type:   "OrderedCollectionPage",
 			PartOf: fmt.Sprintf("https://%s/%s/%s/outbox", config.ServerName, config.UserSep, name),
 			OrderedItems: append(
 				[]Activity{},
 				Activity{
-					Context: []string{
-						"https://www.w3.org/ns/activitystreams",
-						"https://w3id.org/security/v1",
-					},
-					Type:  "Create",
-					Id:    fmt.Sprintf("https://%s/%s/%s/activity/1", config.ServerName, config.UserSep, name),
-					Actor: fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
-					To: []string{
-						"https://www.w3.org/ns/activitystreams#Public",
-					},
 					Object: Object{
 						Context: []string{
 							"https://www.w3.org/ns/activitystreams",
 							"https://w3id.org/security/v1",
 						},
-						Type:      "Object",
-						Id:        fmt.Sprintf("https://%s/%s/%s/activity/1", config.ServerName, config.UserSep, name),
-						MediaType: "text/hmtl",
-						Content:   "Hello, world!",
+						Type: "Create",
+						Id:   fmt.Sprintf("https://%s/%s/%s/activity/1", config.ServerName, config.UserSep, name),
+					},
+					Actor: fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
+					To: []string{
+						"https://www.w3.org/ns/activitystreams#Public",
+					},
+					ChildObject: Audio{
+						Object: Object{
+							Context: []string{
+								"https://www.w3.org/ns/activitystreams",
+								"https://w3id.org/security/v1",
+							},
+							Type: "Audio",
+							Id:   fmt.Sprintf("https://%s/%s/%s/audio/1", config.ServerName, config.UserSep, name),
+							Name: "An Audio object",
+						},
+						Url: Link{
+							Object: Object{
+								Context: []string{
+									"https://www.w3.org/ns/activitystreams",
+									"https://w3id.org/security/v1",
+								},
+								Type: "Link",
+								Id:   fmt.Sprintf("https://%s/%s/%s/link/1", config.ServerName, config.UserSep, name),
+								Name: "A Link object",
+							},
+							Href:      "https://example.org/audio.mp3",
+							MediaType: "audio/mp3",
+						},
 					},
 				},
 			),
