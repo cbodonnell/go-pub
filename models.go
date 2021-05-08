@@ -52,23 +52,33 @@ type Object struct {
 // Actor struct
 type Actor struct {
 	Object
-	Inbox  string `json:"inbox"`
-	Outbox string `json:"outbox"`
+	Inbox     string `json:"inbox"`
+	Outbox    string `json:"outbox"`
+	Following string `json:"following"`
+	Followers string `json:"followers"`
+	Liked     string `json:"liked"`
 }
 
-// Mailbox struct
-type Mailbox struct {
+// OrderedCollection struct
+type OrderedCollection struct {
 	Object
 	TotalItems int    `json:"totalItems"`
 	First      string `json:"first"`
 	Last       string `json:"last"`
 }
 
-// Mailbox struct
-type MailboxPage struct {
+// ActivityCollectionPage struct
+type ActivityCollectionPage struct {
 	Object
 	PartOf       string     `json:"partOf"`
 	OrderedItems []Activity `json:"orderedItems"`
+}
+
+// StringCollectionPage struct
+type StringCollectionPage struct {
+	Object
+	PartOf       string   `json:"partOf"`
+	OrderedItems []string `json:"orderedItems"`
 }
 
 // Activity struct

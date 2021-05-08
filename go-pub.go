@@ -25,9 +25,9 @@ func main() {
 	r.HandleFunc("/users/{name:[[:alnum:]]+}", getUser)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox)
-	// r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing)
-	// r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers)
-	// r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked)
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing)
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers)
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked)
 	// r.Use(jwtMiddleware)
 
 	// Run server
