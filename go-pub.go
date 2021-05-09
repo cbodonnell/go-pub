@@ -19,9 +19,12 @@ func main() {
 	fmt.Println(fmt.Sprintf("Running in ENV: %s", ENV))
 	config = getConfig(ENV)
 
+	db = connectDb(config.Db)
+	defer db.Close()
+
 	// Init router
 	r := mux.NewRouter()
-	r.HandleFunc("/.well-known/webfinger", webFinger)
+	r.HandleFunc("/.well-known/webfinger", getWebFinger)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}", getUser)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox)

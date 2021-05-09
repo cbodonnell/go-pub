@@ -4,13 +4,14 @@ import "github.com/dgrijalva/jwt-go"
 
 // Configuration struct
 type Configuration struct {
-	Debug      bool   `json:"debug"`
-	Port       int    `json:"port"`
-	SSLCert    string `json:"sslCert"`
-	SSLKey     string `json:"sslKey"`
-	JWTKey     string `json:"jwtKey"`
-	ServerName string `json:"serverName"`
-	UserSep    string `json:"userSep"`
+	Debug      bool       `json:"debug"`
+	Port       int        `json:"port"`
+	ServerName string     `json:"serverName"`
+	UserSep    string     `json:"userSep"`
+	SSLCert    string     `json:"sslCert"`
+	SSLKey     string     `json:"sslKey"`
+	Db         DataSource `json:"db"`
+	JWTKey     string     `json:"jwtKey"`
 }
 
 // Group struct
@@ -25,6 +26,21 @@ type JWTClaims struct {
 	Username string  `json:"username"`
 	Groups   []Group `json:"groups"`
 	jwt.StandardClaims
+}
+
+// DataSource struct
+type DataSource struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Dbname   string `json:"dbname"`
+}
+
+type User struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Discoverable bool   `json:"discoverable"`
 }
 
 // WebFinger struct

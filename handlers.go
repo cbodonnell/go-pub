@@ -4,67 +4,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-func webFinger(w http.ResponseWriter, r *http.Request) {
-	orig := r.FormValue("resource")
-
-	log.Printf("resource: %s", orig)
-
-	if strings.HasPrefix(orig, "acct:") {
-		orig = orig[5:]
+func getWebFinger(w http.ResponseWriter, r *http.Request) {
+	resource := r.FormValue("resource")
+	name, err := parseResource(resource)
+	if err != nil {
+		badRequest(w, err)
 	}
 
-	// webfinger := getWebFingerByAcct
-	name := orig
-	idx := strings.LastIndexByte(name, '/')
-	if idx != -1 {
-		name = name[idx+1:]
-		if fmt.Sprintf("https://%s:/%s/%s", config.ServerName, config.UserSep, name) != orig {
-			log.Printf("foreign request rejected")
-			badRequest(w, errors.New("foreign request rejected"))
-			return
-		}
-	} else {
-		idx = strings.IndexByte(name, '@')
-		if idx != -1 {
-			name = name[:idx]
-			if !(name+"@"+config.ServerName == orig) {
-				log.Printf("foreign request rejected")
-				badRequest(w, errors.New("foreign request rejected"))
-				return
-			}
-		}
+	user, err := queryUserByName(name)
+	if err != nil {
+		notFound(w, err)
+		return
 	}
-	// user, err := getUserByName(name)
-	// if err != nil {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
-	// if stealthmode(user.ID, r) {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
 
-	webfinger := WebFinger{
-		Subject: fmt.Sprintf("acct:%s@%s", name, config.ServerName),
-		Aliases: []string{
-			fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
-		},
-		Links: append(
-			[]WebFingerLink{},
-			WebFingerLink{
-				Rel:  "self",
-				Type: "application/activity+json",
-				Href: fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
-			},
-		),
+	if !user.Discoverable {
+		notFound(w, errors.New("user is not discoverable"))
+		return
 	}
+	webfinger := generateWebFinger(user.Name)
 
 	w.Header().Set("Content-Type", "application/jrd+json")
 	json.NewEncoder(w).Encode(webfinger)
@@ -97,80 +59,19 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 func getInbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
+	user, err := queryUserByName(name)
+	if err != nil {
+		notFound(w, err)
+		return
+	}
+
 	page := r.FormValue("page")
 	if page != "true" {
-		// outbox, err := getInboxByName(name)
-		inbox := OrderedCollection{
-			Object: Object{
-				Context: []string{
-					"https://www.w3.org/ns/activitystreams",
-					"https://w3id.org/security/v1",
-				},
-				Id:   fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
-				Type: "OrderedCollection",
-			},
-			TotalItems: 1,
-			First:      fmt.Sprintf("https://%s/%s/%s/inbox?page=true", config.ServerName, config.UserSep, name),
-			Last:       fmt.Sprintf("https://%s/%s/%s/inbox?min_id=0&page=true", config.ServerName, config.UserSep, name),
-		}
-
+		inbox := generateInbox(user.Name)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(inbox)
 	} else {
-		// inbox, err := getInboxPageByName(name)
-		inboxPage := ActivityCollectionPage{
-			Object: Object{
-				Context: []string{
-					"https://www.w3.org/ns/activitystreams",
-					"https://w3id.org/security/v1",
-				},
-				Id:   fmt.Sprintf("https://%s/%s/%s/inbox?page=true", config.ServerName, config.UserSep, name),
-				Type: "OrderedCollectionPage",
-			},
-			PartOf: fmt.Sprintf("https://%s/%s/%s/inbox", config.ServerName, config.UserSep, name),
-			OrderedItems: append(
-				[]Activity{},
-				Activity{
-					Object: Object{
-						Context: []string{
-							"https://www.w3.org/ns/activitystreams",
-							"https://w3id.org/security/v1",
-						},
-						Type: "Create",
-						Id:   fmt.Sprintf("https://%s/%s/%s/activity/1", config.ServerName, config.UserSep, name),
-					},
-					Actor: fmt.Sprintf("https://%s/%s/other", config.ServerName, config.UserSep),
-					To: []string{
-						fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.UserSep, name),
-					},
-					ChildObject: Audio{
-						Object: Object{
-							Context: []string{
-								"https://www.w3.org/ns/activitystreams",
-								"https://w3id.org/security/v1",
-							},
-							Type: "Audio",
-							Id:   fmt.Sprintf("https://%s/%s/%s/audio/1", config.ServerName, config.UserSep, name),
-							Name: "An Audio object",
-						},
-						Url: Link{
-							Object: Object{
-								Context: []string{
-									"https://www.w3.org/ns/activitystreams",
-									"https://w3id.org/security/v1",
-								},
-								Type: "Link",
-								Id:   fmt.Sprintf("https://%s/%s/%s/link/1", config.ServerName, config.UserSep, name),
-								Name: "A Link object",
-							},
-							Href:      "https://example.org/audio.mp3",
-							MediaType: "audio/mp3",
-						},
-					},
-				},
-			),
-		}
-
+		inboxPage := generateInboxPage(name)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(inboxPage)
 	}

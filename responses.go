@@ -12,6 +12,16 @@ func badRequest(w http.ResponseWriter, err error) {
 	http.Error(w, msg, http.StatusBadRequest)
 }
 
+func notFound(w http.ResponseWriter, err error) {
+	var msg string
+	if config.Debug {
+		msg = err.Error()
+	} else {
+		msg = "Not found"
+	}
+	http.Error(w, msg, http.StatusNotFound)
+}
+
 func unauthorizedRequest(w http.ResponseWriter, err error) {
 	var msg string
 	if config.Debug {
