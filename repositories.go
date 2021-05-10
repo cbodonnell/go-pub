@@ -35,9 +35,94 @@ func queryUserByName(name string) (User, error) {
 		&user.ID,
 		&user.Name,
 		&user.Discoverable,
+		&user.URL,
 	)
 	if err != nil {
 		return user, err
 	}
 	return user, nil
+}
+
+func queryInboxByUserName(name string) ([]Post, error) {
+	sql := `SELECT ps.*, act.id, act.user_name, act.type, us.url
+	FROM posts as ps
+	INNER JOIN activities as act
+	ON act.object_id = ps.id
+	INNER JOIN activities_to as act_to
+	ON act_to.activity_id = act.id
+	INNER JOIN users as us
+	ON us.id = act_to.to
+	WHERE us.name = $1
+	ORDER BY act.id DESC`
+
+	rows, err := db.Query(context.Background(), sql, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		var activity Activity
+		var to string
+		err = rows.Scan(
+			&post.ID,
+			&post.UserName,
+			&post.Content,
+			&activity.ID,
+			&activity.UserName,
+			&activity.Type,
+			&to,
+		)
+		if err != nil {
+			return posts, err
+		}
+		// TODO: Do this a better way... maybe a second query?
+		activity.To = []string{to}
+		post.Activity = activity
+		posts = append(posts, post)
+	}
+	err = rows.Err()
+	if err != nil {
+		return posts, err
+	}
+	return posts, nil
+}
+
+func queryOutboxByUserName(name string) ([]Post, error) {
+	sql := `SELECT ps.*, act.id, act.user_name, act.type
+	FROM posts as ps
+	INNER JOIN activities as act
+	ON act.object_id = ps.id
+	WHERE ps.user_name = $1
+	ORDER BY act.id DESC`
+
+	rows, err := db.Query(context.Background(), sql, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		var activity Activity
+		err = rows.Scan(
+			&post.ID,
+			&post.UserName,
+			&post.Content,
+			&activity.ID,
+			&activity.UserName,
+			&activity.Type,
+		)
+		if err != nil {
+			return posts, err
+		}
+		post.Activity = activity
+		posts = append(posts, post)
+	}
+	err = rows.Err()
+	if err != nil {
+		return posts, err
+	}
+	return posts, nil
 }

@@ -15,7 +15,7 @@ func parseResource(resource string) (string, error) {
 	idx := strings.LastIndexByte(name, '/')
 	if idx != -1 {
 		name = name[idx+1:]
-		if fmt.Sprintf("https://%s:/%s/%s", config.ServerName, config.UserSep, name) != resource {
+		if fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, name) != resource {
 			return name, errors.New("foreign request rejected")
 		}
 	} else {
