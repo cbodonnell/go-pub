@@ -54,7 +54,13 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox)
+		totalItems, err := queryInboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox, totalItems)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(inbox)
 		return
@@ -86,7 +92,13 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox)
+		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox, totalItems)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(outbox)
 		return
@@ -118,7 +130,13 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		following := generateOrderedCollection(user.Name, config.Endpoints.Following)
+		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		following := generateOrderedCollection(user.Name, config.Endpoints.Following, totalItems)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(following)
 		return
@@ -151,7 +169,13 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		followers := generateOrderedCollection(user.Name, config.Endpoints.Followers)
+		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		followers := generateOrderedCollection(user.Name, config.Endpoints.Followers, totalItems)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(followers)
 		return
@@ -184,7 +208,13 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		liked := generateOrderedCollection(user.Name, config.Endpoints.Liked)
+		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		liked := generateOrderedCollection(user.Name, config.Endpoints.Liked, totalItems)
 		w.Header().Set("Content-Type", "application/jrd+json")
 		json.NewEncoder(w).Encode(liked)
 		return

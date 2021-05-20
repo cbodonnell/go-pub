@@ -43,6 +43,27 @@ func queryUserByName(name string) (User, error) {
 	return user, nil
 }
 
+func queryInboxTotalItemsByUserName(name string) (int, error) {
+	sql := `SELECT COUNT(ps.*)
+	FROM posts as ps
+	INNER JOIN activities as act
+	ON act.object_id = ps.id
+	INNER JOIN activities_to as act_to
+	ON act_to.activity_id = act.id
+	INNER JOIN users as us
+	ON us.id = act_to.to
+	WHERE us.name = $1`
+
+	var count int
+	err := db.QueryRow(context.Background(), sql, name).Scan(
+		&count,
+	)
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
 func queryInboxByUserName(name string) ([]Post, error) {
 	sql := `SELECT ps.*, act.id, act.user_name, act.type, us.url
 	FROM posts as ps
@@ -87,6 +108,20 @@ func queryInboxByUserName(name string) ([]Post, error) {
 		return posts, err
 	}
 	return posts, nil
+}
+
+func queryOutboxTotalItemsByUserName(name string) (int, error) {
+	sql := `SELECT COUNT(*) FROM posts
+	WHERE user_name = $1`
+
+	var count int
+	err := db.QueryRow(context.Background(), sql, name).Scan(
+		&count,
+	)
+	if err != nil {
+		return count, err
+	}
+	return count, nil
 }
 
 func queryOutboxByUserName(name string) ([]Post, error) {

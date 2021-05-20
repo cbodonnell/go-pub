@@ -39,7 +39,7 @@ func generateActor(name string) Actor {
 	}
 }
 
-func generateOrderedCollection(name string, endpoint string) OrderedCollection {
+func generateOrderedCollection(name string, endpoint string, totalItems int) OrderedCollection {
 	return OrderedCollection{
 		Object: Object{
 			Context: []string{
@@ -49,7 +49,7 @@ func generateOrderedCollection(name string, endpoint string) OrderedCollection {
 			Id:   fmt.Sprintf("https://%s/%s/%s/%s", config.ServerName, config.Endpoints.Users, name, endpoint),
 			Type: "OrderedCollection",
 		},
-		TotalItems: 1, // TODO: Actually implement this
+		TotalItems: totalItems, // TODO: Actually implement this
 		First:      fmt.Sprintf("https://%s/%s/%s/%s?page=true", config.ServerName, config.Endpoints.Users, name, endpoint),
 		Last:       fmt.Sprintf("https://%s/%s/%s/%s?min_id=0&page=true", config.ServerName, config.Endpoints.Users, name, endpoint),
 	}
