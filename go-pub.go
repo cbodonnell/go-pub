@@ -31,6 +31,9 @@ func main() {
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers)
 	r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked)
+
+	// Static files
+	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
 
 	// Run server
@@ -40,7 +43,7 @@ func main() {
 	// CORS in dev
 	if ENV == "dev" {
 		cors := cors.New(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+			AllowedOrigins:   []string{"http://localhost:4200", "http://127.0.0.1:4200"},
 			AllowCredentials: true,
 		})
 		r.Use(cors.Handler)
