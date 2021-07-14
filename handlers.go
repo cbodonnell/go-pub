@@ -3,10 +3,27 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
+
+var templates = template.Must(template.ParseGlob("static/templates/*.html"))
+
+func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
+	err := templates.ExecuteTemplate(w, template, data)
+	if err != nil {
+		internalServerError(w, err)
+	}
+}
+
+func home(w http.ResponseWriter, r *http.Request) {
+
+	claims, _ := checkJWTClaims(r)
+	data := HomeData{Claims: claims, ServerName: config.ServerName, Auth: config.Auth}
+	renderTemplate(w, "index.html", data)
+}
 
 func getWebFinger(w http.ResponseWriter, r *http.Request) {
 	resource := r.FormValue("resource")

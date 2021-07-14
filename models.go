@@ -7,6 +7,7 @@ type Configuration struct {
 	Debug      bool       `json:"debug"`
 	Port       int        `json:"port"`
 	ServerName string     `json:"serverName"`
+	Auth       string     `json:"auth"`
 	Endpoints  Endpoints  `json:"endpoints"`
 	SSLCert    string     `json:"sslCert"`
 	SSLKey     string     `json:"sslKey"`
@@ -45,6 +46,13 @@ type JWTClaims struct {
 type Group struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+// HomeData struct - Data sent to the index.hmtl template
+type HomeData struct {
+	Claims     *JWTClaims
+	ServerName string
+	Auth       string
 }
 
 // User struct

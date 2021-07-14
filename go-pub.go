@@ -24,17 +24,19 @@ func main() {
 
 	// Init router
 	r := mux.NewRouter()
-	r.HandleFunc("/.well-known/webfinger", getWebFinger)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}", getUser)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers)
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked)
+	r.HandleFunc("/", home).Methods("GET")
+	r.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET")
+	r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET")
 
 	// Static files
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
+	r.Use(authMiddleware)
 
 	// Run server
 	port := config.Port
