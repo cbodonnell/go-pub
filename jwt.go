@@ -41,7 +41,7 @@ func jwtMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-func authMiddleware(h http.Handler) http.Handler {
+func refreshMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := checkJWTClaims(r)
 		if err != nil {
@@ -52,7 +52,6 @@ func authMiddleware(h http.Handler) http.Handler {
 }
 
 func refresh(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Refreshing JWT...")
 	client := &http.Client{}
 	authReq, err := http.NewRequest("GET", fmt.Sprintf("%s/", config.Auth), nil)
 	if err != nil {

@@ -36,7 +36,7 @@ func main() {
 	// Static files
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
-	r.Use(authMiddleware)
+	r.Use(refreshMiddleware)
 
 	// Run server
 	port := config.Port
