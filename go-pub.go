@@ -24,19 +24,29 @@ func main() {
 
 	// Init router
 	r := mux.NewRouter()
-	r.HandleFunc("/", home).Methods("GET")
-	r.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET")
-	r.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET")
+
+	// Static home page for testing auth
+	h := r.HandleFunc("/", home).Methods("GET").Subrouter()
+	h.Use(refreshMiddleware)
+
+	// This is a client-to-server GET of an activity
+	g := r.Methods("GET").Subrouter()
+	g.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET")
+	g.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET")
+
+	// This is a client-to-server POST of an activity
+	p := r.Methods("POST").Subrouter()
+	p.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST")
+	// p.Use(jwtMiddleware)
 
 	// Static files
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
-	r.Use(refreshMiddleware)
 
 	// Run server
 	port := config.Port

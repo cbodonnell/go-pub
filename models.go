@@ -50,9 +50,11 @@ type Group struct {
 
 // HomeData struct - Data sent to the index.hmtl template
 type HomeData struct {
-	Claims     *JWTClaims
-	ServerName string
-	Auth       string
+	Claims         *JWTClaims
+	ServerName     string
+	UsersEndpoint  string
+	OutboxEndpoint string
+	Auth           string
 }
 
 // User struct

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -19,9 +20,14 @@ func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-
 	claims, _ := checkJWTClaims(r)
-	data := HomeData{Claims: claims, ServerName: config.ServerName, Auth: config.Auth}
+	data := HomeData{
+		Claims:         claims,
+		ServerName:     config.ServerName,
+		UsersEndpoint:  config.Endpoints.Users,
+		OutboxEndpoint: config.Endpoints.Outbox,
+		Auth:           config.Auth,
+	}
 	renderTemplate(w, "index.html", data)
 }
 
@@ -135,6 +141,42 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 	outboxPage := generateOrderedCollectionPage(name, config.Endpoints.Outbox, orderedItems)
 	w.Header().Set("Content-Type", "application/jrd+json")
 	json.NewEncoder(w).Encode(outboxPage)
+}
+
+func postOutbox(w http.ResponseWriter, r *http.Request) {
+
+	// JUST TESTING STUFF...
+	birdJson := `{"birds":[{"pigeon":"likes to perch on rocks"},{"eagle":"bird of prey"}],"animals":"none"}`
+	var result map[string]interface{}
+	json.Unmarshal([]byte(birdJson), &result)
+
+	// TODO: Create a method to check types
+	birds := result["birds"]
+	switch c := birds.(type) {
+	case string:
+		fmt.Println("birds is string")
+	case map[string]interface{}:
+		fmt.Println("birds is map[string]interface{}")
+	case []interface{}:
+		fmt.Println("birds is []interface{}")
+	default:
+		fmt.Println(fmt.Sprintf("birds is might be %T", c))
+	}
+	animals := result["animals"]
+	switch c := animals.(type) {
+	case string:
+		fmt.Println("animals is string")
+	case map[string]interface{}:
+		fmt.Println("animals is map[string]interface{}")
+	case []interface{}:
+		fmt.Println("animals is []interface{}")
+	default:
+		fmt.Println(fmt.Sprintf("animals is might be %T", c))
+	}
+
+	iri := "https://localhost/posts/123123"
+	created(w, iri)
+	return
 }
 
 func getFollowing(w http.ResponseWriter, r *http.Request) {

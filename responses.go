@@ -2,6 +2,11 @@ package main
 
 import "net/http"
 
+func created(w http.ResponseWriter, iri string) {
+	w.Header().Add("Location", iri)
+	w.WriteHeader(http.StatusCreated)
+}
+
 func badRequest(w http.ResponseWriter, err error) {
 	var msg string
 	if config.Debug {
