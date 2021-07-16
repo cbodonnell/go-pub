@@ -146,13 +146,19 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 func postOutbox(w http.ResponseWriter, r *http.Request) {
 
 	// JUST TESTING STUFF...
-	birdJson := `{"birds":[{"pigeon":"likes to perch on rocks"},{"eagle":"bird of prey"}],"animals":"none"}`
+	birdJson := `{"birds":[{"pigeon":"likes to perch on rocks"},{"eagle":"bird of prey"}],"animals":"tiger","sum":0,"is":true}`
 	var result map[string]interface{}
 	json.Unmarshal([]byte(birdJson), &result)
 
 	// TODO: Create a method to check types
 	birds := result["birds"]
 	switch c := birds.(type) {
+	case nil:
+		fmt.Println("birds is nil")
+	case bool:
+		fmt.Println("birds is bool")
+	case float64:
+		fmt.Println("birds is float64")
 	case string:
 		fmt.Println("birds is string")
 	case map[string]interface{}:
@@ -172,6 +178,53 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("animals is []interface{}")
 	default:
 		fmt.Println(fmt.Sprintf("animals is might be %T", c))
+	}
+	sum := result["sum"]
+	switch c := sum.(type) {
+	case nil:
+		fmt.Println("sum is nil")
+	case bool:
+		fmt.Println("sum is bool")
+	case float64:
+		fmt.Println("sum is float64")
+	case string:
+		fmt.Println("sum is string")
+	case map[string]interface{}:
+		fmt.Println("sum is map[string]interface{}")
+	case []interface{}:
+		fmt.Println("sum is []interface{}")
+	default:
+		fmt.Println(fmt.Sprintf("sum is might be %T", c))
+	}
+	is := result["is"]
+	switch c := is.(type) {
+	case nil:
+		fmt.Println("is is nil")
+	case bool:
+		fmt.Println("is is bool")
+	case float64:
+		fmt.Println("is is float64")
+	case string:
+		fmt.Println("is is string")
+	case map[string]interface{}:
+		fmt.Println("is is map[string]interface{}")
+	case []interface{}:
+		fmt.Println("is is []interface{}")
+	default:
+		fmt.Println(fmt.Sprintf("is is might be %T", c))
+	}
+	none := result["none"]
+	switch c := none.(type) {
+	case nil:
+		fmt.Println("none is nil")
+	case string:
+		fmt.Println("none is string")
+	case map[string]interface{}:
+		fmt.Println("none is map[string]interface{}")
+	case []interface{}:
+		fmt.Println("none is []interface{}")
+	default:
+		fmt.Println(fmt.Sprintf("none is might be %T", c))
 	}
 
 	iri := "https://localhost/posts/123123"
