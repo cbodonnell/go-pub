@@ -52,7 +52,7 @@ func getWebFinger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	webfinger := generateWebFinger(user.Name)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(webfinger)
 }
 
@@ -65,7 +65,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	actor := generateActor(user.Name)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(actor)
 }
 
@@ -86,7 +86,7 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 		}
 
 		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox, totalItems)
-		w.Header().Set("Content-Type", "application/jrd+json")
+		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		json.NewEncoder(w).Encode(inbox)
 		return
 	}
@@ -103,7 +103,7 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inboxPage := generateOrderedCollectionPage(name, config.Endpoints.Inbox, orderedItems)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(inboxPage)
 }
 
@@ -124,7 +124,7 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 		}
 
 		outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox, totalItems)
-		w.Header().Set("Content-Type", "application/jrd+json")
+		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		json.NewEncoder(w).Encode(outbox)
 		return
 	}
@@ -141,7 +141,7 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outboxPage := generateOrderedCollectionPage(name, config.Endpoints.Outbox, orderedItems)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(outboxPage)
 }
 
@@ -205,7 +205,7 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 		}
 
 		following := generateOrderedCollection(user.Name, config.Endpoints.Following, totalItems)
-		w.Header().Set("Content-Type", "application/jrd+json")
+		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		json.NewEncoder(w).Encode(following)
 		return
 	}
@@ -223,7 +223,7 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	followingPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Following, orderedItems)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(followingPage)
 }
 
@@ -244,7 +244,7 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 		}
 
 		followers := generateOrderedCollection(user.Name, config.Endpoints.Followers, totalItems)
-		w.Header().Set("Content-Type", "application/jrd+json")
+		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		json.NewEncoder(w).Encode(followers)
 		return
 	}
@@ -262,7 +262,7 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	followersPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Followers, orderedItems)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(followersPage)
 }
 
@@ -283,7 +283,7 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 		}
 
 		liked := generateOrderedCollection(user.Name, config.Endpoints.Liked, totalItems)
-		w.Header().Set("Content-Type", "application/jrd+json")
+		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		json.NewEncoder(w).Encode(liked)
 		return
 	}
@@ -301,6 +301,6 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 	}
 
 	likedPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Liked, orderedItems)
-	w.Header().Set("Content-Type", "application/jrd+json")
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(likedPage)
 }

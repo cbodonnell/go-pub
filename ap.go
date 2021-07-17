@@ -38,7 +38,7 @@ func findObject(a arb.Arb) (arb.Arb, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Accept", "application/ld+json")
+	req.Header.Add("Accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
