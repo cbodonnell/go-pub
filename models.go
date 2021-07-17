@@ -1,7 +1,5 @@
 package main
 
-import "github.com/dgrijalva/jwt-go"
-
 // Configuration struct
 type Configuration struct {
 	Debug      bool       `json:"debug"`
@@ -32,14 +30,6 @@ type DataSource struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 	Dbname   string `json:"dbname"`
-}
-
-// JWTClaims struct
-type JWTClaims struct {
-	ID       int     `json:"id"`
-	Username string  `json:"username"`
-	Groups   []Group `json:"groups"`
-	jwt.StandardClaims
 }
 
 // Group struct

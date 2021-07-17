@@ -9,6 +9,15 @@ import (
 
 // TODO: Create a package for this middleware accepting the jwt key as a parameter
 
+// JWTClaims struct
+type JWTClaims struct {
+	UserID   int     `json:"user_id"`
+	Username string  `json:"username"`
+	UUID     string  `json:"uuid"`
+	Groups   []Group `json:"groups"`
+	jwt.StandardClaims
+}
+
 func checkJWTClaims(r *http.Request) (*JWTClaims, error) {
 	jwtCookie, err := r.Cookie("jwt")
 	if err != nil {
@@ -34,6 +43,7 @@ func jwtMiddleware(h http.Handler) http.Handler {
 		}
 		_, err = checkJWTClaims(r)
 		if err != nil {
+			fmt.Println("failed middleware")
 			unauthorizedRequest(w, err)
 			return
 		}
@@ -55,7 +65,7 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	authReq, err := http.NewRequest("GET", fmt.Sprintf("%s/", config.Auth), nil)
 	if err != nil {
-		internalServerError(w, err)
+		// internalServerError(w, err)
 		return
 	}
 	for _, cookie := range r.Cookies() {
@@ -63,7 +73,7 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	authResp, err := client.Do(authReq)
 	if err != nil {
-		internalServerError(w, err)
+		// internalServerError(w, err)
 		return
 	}
 	for _, cookie := range authResp.Cookies() {
