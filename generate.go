@@ -49,7 +49,7 @@ func generateOrderedCollection(name string, endpoint string, totalItems int) Ord
 			Id:   fmt.Sprintf("https://%s/%s/%s/%s", config.ServerName, config.Endpoints.Users, name, endpoint),
 			Type: "OrderedCollection",
 		},
-		TotalItems: totalItems, // TODO: Actually implement this
+		TotalItems: totalItems,
 		First:      fmt.Sprintf("https://%s/%s/%s/%s?page=true", config.ServerName, config.Endpoints.Users, name, endpoint),
 		Last:       fmt.Sprintf("https://%s/%s/%s/%s?min_id=0&page=true", config.ServerName, config.Endpoints.Users, name, endpoint),
 	}
@@ -70,7 +70,7 @@ func generateOrderedCollectionPage(name string, endpoint string, orderedItems []
 	}
 }
 
-func generatePostActivity(post Post) PostActivityResource {
+func generatePostActivity(post Note) PostActivityResource {
 	// TODO: Get this array
 	to := []string{
 		"https://www.w3.org/ns/activitystreams#Public",

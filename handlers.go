@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/cheebz/arb"
@@ -13,6 +11,18 @@ import (
 )
 
 var templates = template.Must(template.ParseGlob("static/templates/*.html"))
+var acceptHeaders = http.Header{
+	"Accept": []string{
+		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+		"application/activity+json",
+	},
+}
+var contentTypeHeaders = http.Header{
+	"Content-Type": []string{
+		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+		"application/activity+json",
+	},
+}
 
 func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
 	err := templates.ExecuteTemplate(w, template, data)
@@ -152,40 +162,86 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		unauthorizedRequest(w, errors.New("not your outbox"))
 		return
 	}
-	body, err := ioutil.ReadAll(r.Body)
+	payloadArb, err := arb.Read(r.Body)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	a := arb.New()
-	json.Unmarshal(body, &a)
-	t, err := a.GetString("type")
+	payloadType, err := payloadArb.GetString("type")
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	fmt.Println(fmt.Sprintf("Payload of type %s", t))
-	// If type is a Create Activity, get Object parse, save, and propagate Create Activity
-	// If type is an Object parse, save, and propagate Create Activity
-	o, err := findObject(a)
-	if err != nil {
-		fmt.Println("No object! Need to wrap in Create...")
-		badRequest(w, errors.New("not an activity"))
+	// fmt.Println(fmt.Sprintf("Payload of type %s", payloadType))
+	var activityArb arb.Arb
+	if isObject(payloadType) {
+		activityArb, err = createActivity(payloadArb)
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+	}
+	if isActivity(payloadType) {
+		activityArb = payloadArb
+		objectArb, err := findObject(activityArb, acceptHeaders)
+		err = objectArb.PropToArray("@context")
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		err = formatRecipients(objectArb)
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		activityArb["object"] = objectArb
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		err = activityArb.PropToArray("@context")
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		err = formatRecipients(activityArb)
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+	}
+	if activityArb == nil {
+		badRequest(w, err)
 		return
 	}
-	t, err = getType(o)
+	var activity ActivityResource
+	err = json.Unmarshal(activityArb.ToBytes(), &activity)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	fmt.Println(fmt.Sprintf("Object of type %s", t))
-	iri, err := getIRI(o)
-	if err != nil {
-		badRequest(w, err)
-		return
+	switch payloadType {
+	case "Create":
+		// Activity type is Create, save object detail, Activity_to, and Activity
+		// set attributedTo?
+		// Set object IRI
+
+	default:
+		// Activity type is something else, save object reference (if new), Activity_to, and Activity
 	}
-	fmt.Println(o.ToString())
-	created(w, iri.String())
+
+	// Apply generated ID
+	// Apply actor
+	// Propagate Activity <-- Can this be done with a worker?
+	// Resolve addressing between object and activity using to, bto, cc, bcc, and audience
+
+	for k, l := range contentTypeHeaders {
+		for _, v := range l {
+			w.Header().Add(k, v)
+		}
+	}
+	created(w, activity.Id)
+	json.NewEncoder(w).Encode(activity)
 }
 
 func getFollowing(w http.ResponseWriter, r *http.Request) {

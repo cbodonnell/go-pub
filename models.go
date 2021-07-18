@@ -15,12 +15,13 @@ type Configuration struct {
 
 // DataSource struct
 type Endpoints struct {
-	Users     string `json:"users"`
-	Inbox     string `json:"inbox"`
-	Outbox    string `json:"outbox"`
-	Following string `json:"following"`
-	Followers string `json:"followers"`
-	Liked     string `json:"liked"`
+	Users      string `json:"users"`
+	Activities string `json:"activities"`
+	Inbox      string `json:"inbox"`
+	Outbox     string `json:"outbox"`
+	Following  string `json:"following"`
+	Followers  string `json:"followers"`
+	Liked      string `json:"liked"`
 }
 
 // DataSource struct
@@ -63,8 +64,8 @@ type Activity struct {
 	To       []string `json:"to"`
 }
 
-// Post struct
-type Post struct {
+// Note struct
+type Note struct {
 	ID       int      `json:"id"`
 	UserName string   `json:"userName"`
 	Content  string   `json:"content"`
@@ -93,7 +94,7 @@ type Object struct {
 
 	Attachment   string   `json:"attachment,omitempty"`
 	AttributedTo string   `json:"attributedTo,omitempty"`
-	Audience     string   `json:"audience,omitempty"`
+	Audience     []string `json:"audience,omitempty"`
 	Content      string   `json:"content,omitempty"`
 	Name         string   `json:"name,omitempty"`
 	EndTime      string   `json:"endTime,omitempty"`
@@ -111,9 +112,9 @@ type Object struct {
 	Updated      string   `json:"updated,omitempty"`
 	Url          *Link    `json:"url,omitempty"`
 	To           []string `json:"to,omitempty"`
-	Bto          string   `json:"bto,omitempty"`
-	Cc           string   `json:"cc,omitempty"`
-	Bcc          string   `json:"bcc,omitempty"`
+	Bto          []string `json:"bto,omitempty"`
+	Cc           []string `json:"cc,omitempty"`
+	Bcc          []string `json:"bcc,omitempty"`
 	MediaType    string   `json:"mediaType,omitempty"`
 	Duration     string   `json:"duration,omitempty"`
 }
@@ -161,6 +162,13 @@ type OrderedCollectionPage struct {
 
 // PostActivityResource struct
 type PostActivityResource struct {
+	Object
+	Actor       string `json:"actor"`
+	ChildObject Object `json:"object"`
+}
+
+// PostActivityResource struct
+type ActivityResource struct {
 	Object
 	Actor       string `json:"actor"`
 	ChildObject Object `json:"object"`

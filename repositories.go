@@ -45,7 +45,7 @@ func queryUserByName(name string) (User, error) {
 
 func queryInboxTotalItemsByUserName(name string) (int, error) {
 	sql := `SELECT COUNT(ps.*)
-	FROM posts as ps
+	FROM notes as ps
 	INNER JOIN activities as act
 	ON act.object_id = ps.id
 	INNER JOIN activities_to as act_to
@@ -64,9 +64,9 @@ func queryInboxTotalItemsByUserName(name string) (int, error) {
 	return count, nil
 }
 
-func queryInboxByUserName(name string) ([]Post, error) {
+func queryInboxByUserName(name string) ([]Note, error) {
 	sql := `SELECT ps.*, act.id, act.user_name, act.type, us.url
-	FROM posts as ps
+	FROM notes as ps
 	INNER JOIN activities as act
 	ON act.object_id = ps.id
 	INNER JOIN activities_to as act_to
@@ -81,37 +81,37 @@ func queryInboxByUserName(name string) ([]Post, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var posts []Post
+	var notes []Note
 	for rows.Next() {
-		var post Post
+		var note Note
 		var activity Activity
 		var to string
 		err = rows.Scan(
-			&post.ID,
-			&post.UserName,
-			&post.Content,
+			&note.ID,
+			&note.UserName,
+			&note.Content,
 			&activity.ID,
 			&activity.UserName,
 			&activity.Type,
 			&to,
 		)
 		if err != nil {
-			return posts, err
+			return notes, err
 		}
 		// TODO: Do this a better way... maybe a second query?
 		activity.To = []string{to}
-		post.Activity = activity
-		posts = append(posts, post)
+		note.Activity = activity
+		notes = append(notes, note)
 	}
 	err = rows.Err()
 	if err != nil {
-		return posts, err
+		return notes, err
 	}
-	return posts, nil
+	return notes, nil
 }
 
 func queryOutboxTotalItemsByUserName(name string) (int, error) {
-	sql := `SELECT COUNT(*) FROM posts
+	sql := `SELECT COUNT(*) FROM notes
 	WHERE user_name = $1`
 
 	var count int
@@ -124,9 +124,9 @@ func queryOutboxTotalItemsByUserName(name string) (int, error) {
 	return count, nil
 }
 
-func queryOutboxByUserName(name string) ([]Post, error) {
+func queryOutboxByUserName(name string) ([]Note, error) {
 	sql := `SELECT ps.*, act.id, act.user_name, act.type
-	FROM posts as ps
+	FROM notes as ps
 	INNER JOIN activities as act
 	ON act.object_id = ps.id
 	WHERE ps.user_name = $1
@@ -137,27 +137,27 @@ func queryOutboxByUserName(name string) ([]Post, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var posts []Post
+	var notes []Note
 	for rows.Next() {
-		var post Post
+		var note Note
 		var activity Activity
 		err = rows.Scan(
-			&post.ID,
-			&post.UserName,
-			&post.Content,
+			&note.ID,
+			&note.UserName,
+			&note.Content,
 			&activity.ID,
 			&activity.UserName,
 			&activity.Type,
 		)
 		if err != nil {
-			return posts, err
+			return notes, err
 		}
-		post.Activity = activity
-		posts = append(posts, post)
+		note.Activity = activity
+		notes = append(notes, note)
 	}
 	err = rows.Err()
 	if err != nil {
-		return posts, err
+		return notes, err
 	}
-	return posts, nil
+	return notes, nil
 }
