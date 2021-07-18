@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -172,7 +173,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	// fmt.Println(fmt.Sprintf("Payload of type %s", payloadType))
+	// TODO: Refactor into a parsePayload method
 	var activityArb arb.Arb
 	if isObject(payloadType) {
 		activityArb, err = createActivity(payloadArb)
@@ -214,26 +215,28 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	var activity ActivityResource
+	var activity Activity
 	err = json.Unmarshal(activityArb.ToBytes(), &activity)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	switch payloadType {
+	activity.Actor = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+	switch activity.Type {
 	case "Create":
-		// Activity type is Create, save object detail, Activity_to, and Activity
-		// set attributedTo?
-		// Set object IRI
-
+		// Activity type is Create, save object detail, Activity, and Activity_to
+		activity.ChildObject.AttributedTo = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+		activity, err = createOutboxActivity(activity)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 	default:
-		// Activity type is something else, save object reference (if new), Activity_to, and Activity
+		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
-	// Apply generated ID
-	// Apply actor
-	// Propagate Activity <-- Can this be done with a worker?
-	// Resolve addressing between object and activity using to, bto, cc, bcc, and audience
+	// TODO: Propagate Activity <-- Can this be done with a concurrent worker
+	// by passing the activity into a channel?
 
 	for k, l := range contentTypeHeaders {
 		for _, v := range l {

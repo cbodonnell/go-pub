@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -84,7 +85,7 @@ func queryInboxByUserName(name string) ([]Note, error) {
 	var notes []Note
 	for rows.Next() {
 		var note Note
-		var activity Activity
+		var activity ActivityOLD
 		var to string
 		err = rows.Scan(
 			&note.ID,
@@ -140,7 +141,7 @@ func queryOutboxByUserName(name string) ([]Note, error) {
 	var notes []Note
 	for rows.Next() {
 		var note Note
-		var activity Activity
+		var activity ActivityOLD
 		err = rows.Scan(
 			&note.ID,
 			&note.UserName,
@@ -160,4 +161,72 @@ func queryOutboxByUserName(name string) ([]Note, error) {
 		return notes, err
 	}
 	return notes, nil
+}
+
+// Create a new outbox Activity with full details
+func createOutboxActivity(activity Activity) (Activity, error) {
+	ctx := context.Background()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return activity, err
+	}
+	sql := `INSERT INTO objects (type, content, attributed_to) 
+	VALUES ($1, $2, $3) RETURNING id;`
+	var object_id int
+	err = tx.QueryRow(ctx, sql,
+		activity.ChildObject.Type,
+		activity.ChildObject.Content,
+		activity.ChildObject.AttributedTo,
+	).Scan(&object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	activity.ChildObject.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Objects, object_id)
+	sql = `UPDATE objects
+	SET iri = $1
+	WHERE id = $2;`
+	_, err = tx.Exec(ctx, sql, activity.ChildObject.Id, object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	sql = `INSERT INTO activities (type, actor, object_id)
+	VALUES ($1, $2, $3) RETURNING id;`
+	var activity_id int
+	err = tx.QueryRow(ctx, sql, activity.Type, activity.Actor, object_id).Scan(&activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	activity.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	sql = `UPDATE activities
+	SET iri = $1
+	WHERE id = $2;`
+	_, err = tx.Exec(ctx, sql, activity.Id, activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	// Insert to records (need to do similar for bto, cc, bcc, and audience)
+	valueStrings, valueArgs := createRecipientsInsert(activity_id, activity.To)
+	sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
+	_, err = tx.Exec(ctx, sql, valueArgs...)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	tx.Commit(ctx)
+	return activity, nil
+}
+
+func createRecipientsInsert(activity_id int, recipients []string) ([]string, []interface{}) {
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+	for i, recipient := range recipients {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, activity_id)
+		valueArgs = append(valueArgs, recipient)
+	}
+	return valueStrings, valueArgs
 }

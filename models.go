@@ -17,6 +17,7 @@ type Configuration struct {
 type Endpoints struct {
 	Users      string `json:"users"`
 	Activities string `json:"activities"`
+	Objects    string `json:"objects"`
 	Inbox      string `json:"inbox"`
 	Outbox     string `json:"outbox"`
 	Following  string `json:"following"`
@@ -39,7 +40,7 @@ type Group struct {
 	Name string `json:"name"`
 }
 
-// HomeData struct - Data sent to the index.hmtl template
+// HomeData struct - Data sent to the index.html template
 type HomeData struct {
 	Claims         *JWTClaims
 	ServerName     string
@@ -56,8 +57,8 @@ type User struct {
 	URL          string `json:"url"`
 }
 
-// Activity struct
-type Activity struct {
+// ActivityOLD struct
+type ActivityOLD struct {
 	ID       int      `json:"id"`
 	UserName string   `json:"userName"`
 	Type     string   `json:"type"`
@@ -66,10 +67,10 @@ type Activity struct {
 
 // Note struct
 type Note struct {
-	ID       int      `json:"id"`
-	UserName string   `json:"userName"`
-	Content  string   `json:"content"`
-	Activity Activity `json:"activity"`
+	ID       int         `json:"id"`
+	UserName string      `json:"userName"`
+	Content  string      `json:"content"`
+	Activity ActivityOLD `json:"activity"`
 }
 
 // WebFinger struct
@@ -145,7 +146,7 @@ type Actor struct {
 	Liked     string `json:"liked"`
 }
 
-// OrderedCollection struct
+// OrderedCollection struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-orderedcollection)
 type OrderedCollection struct {
 	Object
 	TotalItems int    `json:"totalItems"`
@@ -153,7 +154,7 @@ type OrderedCollection struct {
 	Last       string `json:"last"`
 }
 
-// OrderedCollectionPage struct
+// OrderedCollectionPage struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-orderedcollectionpage)
 type OrderedCollectionPage struct {
 	Object
 	PartOf       string        `json:"partOf"`
@@ -167,8 +168,8 @@ type PostActivityResource struct {
 	ChildObject Object `json:"object"`
 }
 
-// PostActivityResource struct
-type ActivityResource struct {
+// Activity struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-activity)
+type Activity struct {
 	Object
 	Actor       string `json:"actor"`
 	ChildObject Object `json:"object"`
