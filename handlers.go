@@ -184,6 +184,10 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	if isActivity(payloadType) {
 		activityArb = payloadArb
+		// TODO: Just get Id here, if available
+		// otherwise, traverse object to get it's id
+
+		// Should something else be done here if it's not a Create?
 		objectArb, err := findObject(activityArb, acceptHeaders)
 		err = objectArb.PropToArray("@context")
 		if err != nil {
@@ -225,8 +229,15 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	switch activity.Type {
 	case "Create":
 		// Activity type is Create, save object detail, Activity, and Activity_to
-		activity.ChildObject.AttributedTo = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+		activity.ChildObject.AttributedTo = activity.Actor
 		activity, err = createOutboxActivity(activity)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+	case "Like":
+		// Activity type is Create, save object detail, Activity, and Activity_to
+		activity, err = createOutboxReferenceActivity(activity)
 		if err != nil {
 			internalServerError(w, err)
 			return

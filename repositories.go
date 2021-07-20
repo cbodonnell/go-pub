@@ -230,3 +230,52 @@ func createRecipientsInsert(activity_id int, recipients []string) ([]string, []i
 	}
 	return valueStrings, valueArgs
 }
+
+// Create a new outbox Activity with full details
+func createOutboxReferenceActivity(activity Activity) (Activity, error) {
+	ctx := context.Background()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return activity, err
+	}
+	sql := `INSERT INTO objects (type, content, iri) 
+	VALUES ($1, $2, $3) RETURNING id;`
+	var object_id int
+	err = tx.QueryRow(ctx, sql,
+		activity.ChildObject.Type,
+		activity.ChildObject.Content,
+		activity.ChildObject.Id,
+	).Scan(&object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+
+	sql = `INSERT INTO activities (type, actor, object_id)
+	VALUES ($1, $2, $3) RETURNING id;`
+	var activity_id int
+	err = tx.QueryRow(ctx, sql, activity.Type, activity.Actor, object_id).Scan(&activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	activity.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	sql = `UPDATE activities
+	SET iri = $1
+	WHERE id = $2;`
+	_, err = tx.Exec(ctx, sql, activity.Id, activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	// Insert to records (need to do similar for bto, cc, bcc, and audience)
+	valueStrings, valueArgs := createRecipientsInsert(activity_id, activity.To)
+	sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
+	_, err = tx.Exec(ctx, sql, valueArgs...)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activity, err
+	}
+	tx.Commit(ctx)
+	return activity, nil
+}
