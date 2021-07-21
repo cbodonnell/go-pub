@@ -188,22 +188,22 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		// otherwise, traverse object to get it's id
 
 		// Should something else be done here if it's not a Create?
-		objectArb, err := findObject(activityArb, acceptHeaders)
-		err = objectArb.PropToArray("@context")
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
-		err = formatRecipients(objectArb)
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
-		activityArb["object"] = objectArb
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
+		// objectArb, err := findObject(activityArb, acceptHeaders)
+		// err = objectArb.PropToArray("@context")
+		// if err != nil {
+		// 	badRequest(w, err)
+		// 	return
+		// }
+		// err = formatRecipients(objectArb)
+		// if err != nil {
+		// 	badRequest(w, err)
+		// 	return
+		// }
+		// activityArb["object"] = objectArb
+		// if err != nil {
+		// 	badRequest(w, err)
+		// 	return
+		// }
 		err = activityArb.PropToArray("@context")
 		if err != nil {
 			badRequest(w, err)
@@ -219,25 +219,33 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	var activity Activity
-	err = json.Unmarshal(activityArb.ToBytes(), &activity)
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	activity.Actor = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
-	switch activity.Type {
+	activityType, err := activityArb.GetString("type")
+	// var activity Activity
+	// err = json.Unmarshal(activityArb.ToBytes(), &activity)
+	// if err != nil {
+	// 	badRequest(w, err)
+	// 	return
+	// }
+	// activity.Actor = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+	actor := fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+	switch activityType {
 	case "Create":
 		// Activity type is Create, save object detail, Activity, and Activity_to
-		activity.ChildObject.AttributedTo = activity.Actor
-		activity, err = createOutboxActivity(activity)
+		// activity.ChildObject.AttributedTo = activity.Actor
+
+		objectArb, err := activityArb.GetArb("object")
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		activityArb, err = createOutboxActivity(activityArb, objectArb, actor)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 	case "Like":
 		// Activity type is Create, save object detail, Activity, and Activity_to
-		activity, err = createOutboxReferenceActivity(activity)
+		activityArb, err = createOutboxReferenceActivity(activityArb, actor)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -254,8 +262,10 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(k, v)
 		}
 	}
-	created(w, activity.Id)
-	json.NewEncoder(w).Encode(activity)
+	iri, err := activityArb.GetString("id")
+	created(w, iri)
+	activityArb.Write(w)
+	// json.NewEncoder(w).Encode(activity)
 }
 
 func getFollowing(w http.ResponseWriter, r *http.Request) {

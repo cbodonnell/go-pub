@@ -109,7 +109,6 @@ func createActivity(object arb.Arb) (arb.Arb, error) {
 	}
 	// activity["id"] = "Create" // This is auto-generated and added later
 	// activity["actor"] = "username" // This is from auth
-
 	activity["object"] = object
 	activity["to"] = object["to"]
 	activity["bto"] = object["bto"]

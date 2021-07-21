@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
+	"github.com/cheebz/arb"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -164,60 +164,60 @@ func queryOutboxByUserName(name string) ([]Note, error) {
 }
 
 // Create a new outbox Activity with full details
-func createOutboxActivity(activity Activity) (Activity, error) {
+func createOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return activity, err
+		return activityArb, err
 	}
 	sql := `INSERT INTO objects (type, content, attributed_to) 
 	VALUES ($1, $2, $3) RETURNING id;`
 	var object_id int
 	err = tx.QueryRow(ctx, sql,
-		activity.ChildObject.Type,
-		activity.ChildObject.Content,
-		activity.ChildObject.AttributedTo,
+		objectArb["type"],
+		objectArb["content"],
+		actor,
 	).Scan(&object_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
-	activity.ChildObject.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Objects, object_id)
+	objectArb["id"] = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Objects, object_id)
 	sql = `UPDATE objects
 	SET iri = $1
 	WHERE id = $2;`
-	_, err = tx.Exec(ctx, sql, activity.ChildObject.Id, object_id)
+	_, err = tx.Exec(ctx, sql, objectArb["id"], object_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
 	sql = `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
 	var activity_id int
-	err = tx.QueryRow(ctx, sql, activity.Type, activity.Actor, object_id).Scan(&activity_id)
+	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id).Scan(&activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
-	activity.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
-	_, err = tx.Exec(ctx, sql, activity.Id, activity_id)
+	_, err = tx.Exec(ctx, sql, activityArb["id"], activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
-	// Insert to records (need to do similar for bto, cc, bcc, and audience)
-	valueStrings, valueArgs := createRecipientsInsert(activity_id, activity.To)
-	sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
-	_, err = tx.Exec(ctx, sql, valueArgs...)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activity, err
-	}
+	// // Insert to records (need to do similar for bto, cc, bcc, and audience)
+	// valueStrings, valueArgs := createRecipientsInsert(activity_id, activityArb.To)
+	// sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
+	// _, err = tx.Exec(ctx, sql, valueArgs...)
+	// if err != nil {
+	// 	tx.Rollback(ctx)
+	// 	return activityArb, err
+	// }
 	tx.Commit(ctx)
-	return activity, nil
+	return activityArb, nil
 }
 
 func createRecipientsInsert(activity_id int, recipients []string) ([]string, []interface{}) {
@@ -232,50 +232,48 @@ func createRecipientsInsert(activity_id int, recipients []string) ([]string, []i
 }
 
 // Create a new outbox Activity with full details
-func createOutboxReferenceActivity(activity Activity) (Activity, error) {
+func createOutboxReferenceActivity(activityArb arb.Arb, actor string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return activity, err
+		return activityArb, err
 	}
-	sql := `INSERT INTO objects (type, content, iri) 
-	VALUES ($1, $2, $3) RETURNING id;`
+	sql := `INSERT INTO objects (iri) 
+	VALUES ($1) RETURNING id;`
 	var object_id int
 	err = tx.QueryRow(ctx, sql,
-		activity.ChildObject.Type,
-		activity.ChildObject.Content,
-		activity.ChildObject.Id,
+		activityArb["object"],
 	).Scan(&object_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
 
 	sql = `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
 	var activity_id int
-	err = tx.QueryRow(ctx, sql, activity.Type, activity.Actor, object_id).Scan(&activity_id)
+	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id).Scan(&activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
-	activity.Id = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("https://%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
-	_, err = tx.Exec(ctx, sql, activity.Id, activity_id)
+	_, err = tx.Exec(ctx, sql, activityArb["id"], activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
-		return activity, err
+		return activityArb, err
 	}
 	// Insert to records (need to do similar for bto, cc, bcc, and audience)
-	valueStrings, valueArgs := createRecipientsInsert(activity_id, activity.To)
-	sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
-	_, err = tx.Exec(ctx, sql, valueArgs...)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activity, err
-	}
+	// valueStrings, valueArgs := createRecipientsInsert(activity_id, activityArb.To)
+	// sql = fmt.Sprintf("INSERT INTO activities_to (activity_id, iri) VALUES %s", strings.Join(valueStrings, ","))
+	// _, err = tx.Exec(ctx, sql, valueArgs...)
+	// if err != nil {
+	// 	tx.Rollback(ctx)
+	// 	return activityArb, err
+	// }
 	tx.Commit(ctx)
-	return activity, nil
+	return activityArb, nil
 }
