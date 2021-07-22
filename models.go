@@ -54,7 +54,7 @@ type User struct {
 	ID           int    `json:"id"`
 	Name         string `json:"name"`
 	Discoverable bool   `json:"discoverable"`
-	URL          string `json:"url"`
+	IRI          string `json:"url"`
 }
 
 // ActivityOLD struct
@@ -171,6 +171,6 @@ type PostActivityResource struct {
 // Activity struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-activity)
 type Activity struct {
 	Object
-	Actor       string `json:"actor"`
-	ChildObject Object `json:"object"`
+	Actor       string      `json:"actor"`
+	ChildObject interface{} `json:"object"`
 }

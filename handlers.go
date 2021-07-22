@@ -18,6 +18,7 @@ var acceptHeaders = http.Header{
 		"application/activity+json",
 	},
 }
+var contentType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
 var contentTypeHeaders = http.Header{
 	"Content-Type": []string{
 		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
@@ -140,19 +141,19 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := queryOutboxByUserName(user.Name)
+	activities, err := queryOutboxByUserName(user.Name)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
 
-	orderedItems := make([]interface{}, len(posts))
-	for i, post := range posts {
-		orderedItems[i] = generatePostActivity(post)
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
 	}
 
 	outboxPage := generateOrderedCollectionPage(name, config.Endpoints.Outbox, orderedItems)
-	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
+	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(outboxPage)
 }
 
@@ -164,6 +165,11 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payloadArb, err := arb.Read(r.Body)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	err = checkContext(payloadArb)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -184,31 +190,6 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	if isActivity(payloadType) {
 		activityArb = payloadArb
-		// TODO: Just get Id here, if available
-		// otherwise, traverse object to get it's id
-
-		// Should something else be done here if it's not a Create?
-		// objectArb, err := findObject(activityArb, acceptHeaders)
-		// err = objectArb.PropToArray("@context")
-		// if err != nil {
-		// 	badRequest(w, err)
-		// 	return
-		// }
-		// err = formatRecipients(objectArb)
-		// if err != nil {
-		// 	badRequest(w, err)
-		// 	return
-		// }
-		// activityArb["object"] = objectArb
-		// if err != nil {
-		// 	badRequest(w, err)
-		// 	return
-		// }
-		err = activityArb.PropToArray("@context")
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
 		err = formatRecipients(activityArb)
 		if err != nil {
 			badRequest(w, err)
@@ -220,19 +201,9 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activityType, err := activityArb.GetString("type")
-	// var activity Activity
-	// err = json.Unmarshal(activityArb.ToBytes(), &activity)
-	// if err != nil {
-	// 	badRequest(w, err)
-	// 	return
-	// }
-	// activity.Actor = fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
 	actor := fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
 	switch activityType {
 	case "Create":
-		// Activity type is Create, save object detail, Activity, and Activity_to
-		// activity.ChildObject.AttributedTo = activity.Actor
-
 		objectArb, err := activityArb.GetArb("object")
 		if err != nil {
 			badRequest(w, err)
@@ -244,13 +215,14 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "Like":
-		// Activity type is Create, save object detail, Activity, and Activity_to
 		activityArb, err = createOutboxReferenceActivity(activityArb, actor)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 	default:
+		badRequest(w, errors.New("unsupported activity type"))
+		return
 		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
@@ -265,7 +237,6 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	iri, err := activityArb.GetString("id")
 	created(w, iri)
 	activityArb.Write(w)
-	// json.NewEncoder(w).Encode(activity)
 }
 
 func getFollowing(w http.ResponseWriter, r *http.Request) {
@@ -291,15 +262,15 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Implement a method to get the following collection
-	posts, err := queryOutboxByUserName(user.Name)
+	activities, err := queryOutboxByUserName(user.Name)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
 
-	orderedItems := make([]interface{}, len(posts))
-	for i, post := range posts {
-		orderedItems[i] = generatePostActivity(post)
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
 	}
 
 	followingPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Following, orderedItems)
@@ -330,15 +301,15 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Implement a method to get the followers collection
-	posts, err := queryOutboxByUserName(user.Name)
+	activities, err := queryOutboxByUserName(user.Name)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
 
-	orderedItems := make([]interface{}, len(posts))
-	for i, post := range posts {
-		orderedItems[i] = generatePostActivity(post)
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
 	}
 
 	followersPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Followers, orderedItems)
@@ -369,15 +340,15 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Implement a method to get the liked collection
-	posts, err := queryOutboxByUserName(user.Name)
+	activities, err := queryOutboxByUserName(user.Name)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
 
-	orderedItems := make([]interface{}, len(posts))
-	for i, post := range posts {
-		orderedItems[i] = generatePostActivity(post)
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
 	}
 
 	likedPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Liked, orderedItems)

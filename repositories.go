@@ -36,7 +36,7 @@ func queryUserByName(name string) (User, error) {
 		&user.ID,
 		&user.Name,
 		&user.Discoverable,
-		&user.URL,
+		&user.IRI,
 	)
 	if err != nil {
 		return user, err
@@ -112,11 +112,13 @@ func queryInboxByUserName(name string) ([]Note, error) {
 }
 
 func queryOutboxTotalItemsByUserName(name string) (int, error) {
-	sql := `SELECT COUNT(*) FROM notes
-	WHERE user_name = $1`
+	sql := `SELECT COUNT(*) FROM activities
+	WHERE actor = $1`
 
 	var count int
-	err := db.QueryRow(context.Background(), sql, name).Scan(
+	err := db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, name),
+	).Scan(
 		&count,
 	)
 	if err != nil {
@@ -125,42 +127,110 @@ func queryOutboxTotalItemsByUserName(name string) (int, error) {
 	return count, nil
 }
 
-func queryOutboxByUserName(name string) ([]Note, error) {
-	sql := `SELECT ps.*, act.id, act.user_name, act.type
-	FROM notes as ps
-	INNER JOIN activities as act
-	ON act.object_id = ps.id
-	WHERE ps.user_name = $1
-	ORDER BY act.id DESC`
+func queryOutboxByUserName(name string) ([]Activity, error) {
+	sql := `SELECT *
+	FROM activities
+	WHERE actor = $1
+	ORDER BY id DESC`
 
-	rows, err := db.Query(context.Background(), sql, name)
+	rows, err := db.Query(context.Background(), sql,
+		fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, name),
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var notes []Note
+	var activities []Activity
 	for rows.Next() {
-		var note Note
-		var activity ActivityOLD
+		var activity_id int
+		var object_id int
+		activity := generateNewActivity()
 		err = rows.Scan(
-			&note.ID,
-			&note.UserName,
-			&note.Content,
-			&activity.ID,
-			&activity.UserName,
+			&activity_id,
 			&activity.Type,
+			&activity.Actor,
+			&object_id,
+			&activity.Id,
 		)
 		if err != nil {
-			return notes, err
+			return activities, err
 		}
-		note.Activity = activity
-		notes = append(notes, note)
+		object_iri, err := queryObjectIRIById(object_id)
+		if err != nil {
+			return activities, err
+		}
+		object, err := queryObjectByIRI(object_iri)
+		if err != nil {
+			activity.ChildObject = object_iri
+
+		} else {
+			activity.ChildObject = object
+		}
+		activity.To, err = queryToByActivityId(activity_id)
+		activities = append(activities, activity)
 	}
 	err = rows.Err()
 	if err != nil {
-		return notes, err
+		return activities, err
 	}
-	return notes, nil
+	return activities, nil
+}
+
+func queryObjectIRIById(object_id int) (string, error) {
+	sql := `SELECT iri
+	FROM objects WHERE id = $1;`
+	var iri string
+	err := db.QueryRow(context.Background(), sql, object_id).Scan(
+		&iri,
+	)
+	if err != nil {
+		return iri, err
+	}
+	return iri, nil
+}
+
+func queryObjectByIRI(iri string) (Object, error) {
+	sql := `SELECT type, iri, content, attributed_to
+	FROM objects WHERE iri = $1;`
+	var object Object
+	err := db.QueryRow(context.Background(), sql, iri).Scan(
+		&object.Type,
+		&object.Id,
+		&object.Content,
+		&object.AttributedTo,
+	)
+	if err != nil {
+		return object, err
+	}
+	return object, nil
+}
+
+func queryToByActivityId(activity_id int) ([]string, error) {
+	sql := `SELECT iri
+	FROM activities_to
+	WHERE activity_id = $1`
+
+	rows, err := db.Query(context.Background(), sql, activity_id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var tos []string
+	for rows.Next() {
+		var to string
+		err = rows.Scan(
+			&to,
+		)
+		if err != nil {
+			return tos, err
+		}
+		tos = append(tos, to)
+	}
+	err = rows.Err()
+	if err != nil {
+		return tos, err
+	}
+	return tos, nil
 }
 
 // Create a new outbox Activity with full details

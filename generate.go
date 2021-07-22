@@ -39,6 +39,15 @@ func generateActor(name string) Actor {
 	}
 }
 
+func generateNewActivity() Activity {
+	var activity Activity
+	activity.Context = []string{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return activity
+}
+
 func generateOrderedCollection(name string, endpoint string, totalItems int) OrderedCollection {
 	return OrderedCollection{
 		Object: Object{

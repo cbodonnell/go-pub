@@ -95,6 +95,25 @@ func findObject(a arb.Arb, headers http.Header) (arb.Arb, error) {
 	return arb, nil
 }
 
+func checkContext(payload arb.Arb) error {
+	err := payload.PropToArray("@context")
+	if err != nil {
+		return err
+	}
+	context, err := payload.GetArray("@context")
+	if err != nil {
+		return err
+	}
+	for _, item := range context {
+		if s, ok := item.(string); ok {
+			if s == "https://www.w3.org/ns/activitystreams" {
+				return nil
+			}
+		}
+	}
+	return errors.New("\"https://www.w3.org/ns/activitystreams\" not in context")
+}
+
 func createActivity(object arb.Arb) (arb.Arb, error) {
 	activity := arb.New()
 	activity["@context"] = []string{"https://www.w3.org/ns/activitystreams"}
