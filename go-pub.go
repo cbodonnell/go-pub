@@ -32,6 +32,7 @@ func main() {
 	// This is a client-to-server GET of an activity
 	g := r.Methods("GET").Subrouter()
 	g.HandleFunc("/", home)
+	g.HandleFunc("/register", register)
 	g.HandleFunc("/.well-known/webfinger", getWebFinger)
 	g.HandleFunc("/users/{name:[[:alnum:]]+}", getUser)
 	g.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox)

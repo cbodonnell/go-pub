@@ -44,6 +44,18 @@ func queryUserByName(name string) (User, error) {
 	return user, nil
 }
 
+func createUser(name string) (string, error) {
+	sql := `INSERT INTO users (name, discoverable, iri)
+	VALUES ($1, true, $2)`
+
+	iri := fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, name)
+	_, err := db.Exec(context.Background(), sql, name, iri)
+	if err != nil {
+		return iri, err
+	}
+	return iri, nil
+}
+
 func queryInboxTotalItemsByUserName(name string) (int, error) {
 	sql := `SELECT COUNT(ps.*)
 	FROM notes as ps

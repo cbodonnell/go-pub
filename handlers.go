@@ -42,7 +42,23 @@ func home(w http.ResponseWriter, r *http.Request) {
 		OutboxEndpoint: config.Endpoints.Outbox,
 		Auth:           config.Auth,
 	}
+	if claims != nil {
+		data.User, _ = queryUserByName(claims.Username)
+	}
 	renderTemplate(w, "index.html", data)
+}
+
+func register(w http.ResponseWriter, r *http.Request) {
+	claims, err := checkJWTClaims(r)
+	if err != nil {
+		unauthorizedRequest(w, err)
+		return
+	}
+	_, err = createUser(claims.Username)
+	if err != nil {
+		badRequest(w, err)
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func getWebFinger(w http.ResponseWriter, r *http.Request) {

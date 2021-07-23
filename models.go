@@ -43,6 +43,7 @@ type Group struct {
 // HomeData struct - Data sent to the index.html template
 type HomeData struct {
 	Claims         *JWTClaims
+	User           User
 	ServerName     string
 	UsersEndpoint  string
 	OutboxEndpoint string
