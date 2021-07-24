@@ -35,37 +35,10 @@ func checkJWTClaims(r *http.Request) (*JWTClaims, error) {
 	return claims, nil
 }
 
-func jwtMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := checkJWTClaims(r)
-		if err != nil {
-			refresh(w, r)
-		}
-		_, err = checkJWTClaims(r)
-		if err != nil {
-			fmt.Println("failed middleware")
-			unauthorizedRequest(w, err)
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
-func refreshMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := checkJWTClaims(r)
-		if err != nil {
-			refresh(w, r)
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
 func refresh(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	authReq, err := http.NewRequest("GET", fmt.Sprintf("%s/", config.Auth), nil)
 	if err != nil {
-		// internalServerError(w, err)
 		return
 	}
 	for _, cookie := range r.Cookies() {
@@ -73,7 +46,6 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	authResp, err := client.Do(authReq)
 	if err != nil {
-		// internalServerError(w, err)
 		return
 	}
 	for _, cookie := range authResp.Cookies() {

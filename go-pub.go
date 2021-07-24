@@ -24,28 +24,31 @@ func main() {
 
 	// Init router
 	r := mux.NewRouter()
+	pub := r.NewRoute().Subrouter()
+	auth := r.NewRoute().Subrouter()
 
-	// // Static home page for testing auth
-	// h := r.HandleFunc("/", home).Methods("GET").Subrouter()
-	// h.Use(refreshMiddleware)
+	// TODO: Break subrouters into public and auth?
+	// public -> GET from Outbox and POST to Inbox
+	// auth -> POST to Outbox and GET from Inbox
 
 	// This is a client-to-server GET of an activity
-	g := r.Methods("GET").Subrouter()
-	g.HandleFunc("/", home)
-	g.HandleFunc("/register", register)
-	g.HandleFunc("/.well-known/webfinger", getWebFinger)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}", getUser)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers)
-	g.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked)
-	g.Use(refreshMiddleware)
+	// g := r.Methods("GET").Subrouter()
+	pub.HandleFunc("/", home).Methods("GET")
+	pub.HandleFunc("/register", register).Methods("GET")
+
+	pub.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET")
+	// g.Use(refreshMiddleware)
 
 	// This is a client-to-server POST of an activity
-	p := r.Methods("POST", "OPTIONS").Subrouter()
-	p.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox)
-	p.Use(jwtMiddleware)
+	// p := r.Methods("POST", "OPTIONS").Subrouter()
+	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
+	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET")
+	auth.Use(jwtMiddleware, userMiddleware)
 
 	// Static files
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))

@@ -26,6 +26,18 @@ var contentTypeHeaders = http.Header{
 	},
 }
 
+func checkContentType(headers http.Header) error {
+	h := headers.Values("Content-Type")
+	for _, v := range h {
+		for _, item := range contentTypeHeaders["Content-Type"] {
+			if v == item {
+				return nil
+			}
+		}
+	}
+	return errors.New("invalid content-type headers")
+}
+
 func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
 	err := templates.ExecuteTemplate(w, template, data)
 	if err != nil {
@@ -179,6 +191,11 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	claims, _ := checkJWTClaims(r)
 	if claims.Username != name {
 		unauthorizedRequest(w, errors.New("not your outbox"))
+		return
+	}
+	err := checkContentType(r.Header)
+	if err != nil {
+		badRequest(w, err)
 		return
 	}
 	payloadArb, err := arb.Read(r.Body)

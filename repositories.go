@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -42,6 +43,21 @@ func queryUserByName(name string) (User, error) {
 		return user, err
 	}
 	return user, nil
+}
+
+func checkUser(name string) error {
+	sql := `SELECT 1 from users
+	WHERE name = $1`
+
+	var result int
+	err := db.QueryRow(context.Background(), sql, name).Scan(&result)
+	if err != nil {
+		return err
+	}
+	if result != 1 {
+		return errors.New("user does not exist")
+	}
+	return nil
 }
 
 func createUser(name string) (string, error) {
