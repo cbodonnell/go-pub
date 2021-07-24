@@ -1,0 +1,26 @@
+{
+    "debug": true,
+    "port": 80,
+    "serverName": "http://localhost",
+    "auth": "http://localhost:8080/auth",
+    "endpoints": {
+        "users": "users",
+        "activities": "activities",
+        "objects": "objects",
+        "inbox": "inbox",
+        "outbox": "outbox",
+        "following": "following",
+        "followers": "followers",
+        "liked": "liked"
+    },
+    "sslCert": "",
+    "sslKey": "",
+    "db": {
+        "host": "host",
+        "port": 5432,
+        "user": "user",
+        "password": "password",
+        "dbname": "database"
+    },
+    "jwtKey": "secret"
+}

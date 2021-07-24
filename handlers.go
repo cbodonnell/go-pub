@@ -217,7 +217,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activityType, err := activityArb.GetString("type")
-	actor := fmt.Sprintf("https://%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
+	actor := fmt.Sprintf("%s/%s/%s", config.ServerName, config.Endpoints.Users, claims.Username)
 	switch activityType {
 	case "Create":
 		objectArb, err := activityArb.GetArb("object")

@@ -43,7 +43,7 @@ func main() {
 	g.Use(refreshMiddleware)
 
 	// This is a client-to-server POST of an activity
-	p := r.Methods("POST").Subrouter()
+	p := r.Methods("POST", "OPTIONS").Subrouter()
 	p.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox)
 	p.Use(jwtMiddleware)
 
@@ -58,7 +58,7 @@ func main() {
 	// CORS in dev
 	if ENV == "dev" {
 		cors := cors.New(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:4200", "http://127.0.0.1:4200"},
+			AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
 			AllowCredentials: true,
 		})
 		r.Use(cors.Handler)
