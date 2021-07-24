@@ -48,6 +48,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index.html", data)
 }
 
+// TODO: Can this be a middleware or added to the existing auth middleware?
 func register(w http.ResponseWriter, r *http.Request) {
 	claims, err := checkJWTClaims(r)
 	if err != nil {
