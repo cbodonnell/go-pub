@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/cheebz/arb"
 	"github.com/gorilla/mux"
@@ -36,6 +37,18 @@ func checkContentType(headers http.Header) error {
 		}
 	}
 	return errors.New("invalid content-type headers")
+}
+
+func checkAccept(headers http.Header) error {
+	h := headers.Values("Accept")
+	for _, v := range h {
+		for _, item := range acceptHeaders["Accept"] {
+			if v == item {
+				return nil
+			}
+		}
+	}
+	return errors.New("invalid accept headers")
 }
 
 func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
@@ -388,4 +401,40 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 	likedPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Liked, orderedItems)
 	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 	json.NewEncoder(w).Encode(likedPage)
+}
+
+func getActivity(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+
+	activity, err := queryActivity(id)
+	if err != nil {
+		notFound(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
+	json.NewEncoder(w).Encode(activity)
+}
+
+func getObject(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+
+	object, err := queryObject(id)
+	if err != nil {
+		notFound(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
+	json.NewEncoder(w).Encode(object)
 }

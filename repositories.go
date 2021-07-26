@@ -195,6 +195,9 @@ func queryOutboxByUserName(name string) ([]Activity, error) {
 			activity.ChildObject = object
 		}
 		activity.To, err = queryToByActivityId(activity_id)
+		if err != nil {
+			return activities, err
+		}
 		activities = append(activities, activity)
 	}
 	err = rows.Err()
@@ -374,4 +377,56 @@ func createOutboxReferenceActivity(activityArb arb.Arb, actor string) (arb.Arb, 
 	// }
 	tx.Commit(ctx)
 	return activityArb, nil
+}
+
+func queryActivity(ID int) (Activity, error) {
+	sql := `SELECT * FROM activities
+	WHERE id = $1
+	LIMIT 1`
+
+	var activity_id int
+	var object_id int
+	activity := generateNewActivity()
+	err := db.QueryRow(context.Background(), sql, ID).Scan(
+		&activity_id,
+		&activity.Type,
+		&activity.Actor,
+		&object_id,
+		&activity.Id,
+	)
+	if err != nil {
+		return activity, err
+	}
+	object_iri, err := queryObjectIRIById(object_id)
+	if err != nil {
+		return activity, err
+	}
+	object, err := queryObjectByIRI(object_iri)
+	if err != nil {
+		activity.ChildObject = object_iri
+
+	} else {
+		activity.ChildObject = object
+	}
+	activity.To, err = queryToByActivityId(activity_id)
+	if err != nil {
+		return activity, err
+	}
+	return activity, nil
+}
+
+func queryObject(id int) (Object, error) {
+	sql := `SELECT type, iri, content, attributed_to
+	FROM objects WHERE id = $1;`
+	var object Object
+	err := db.QueryRow(context.Background(), sql, id).Scan(
+		&object.Type,
+		&object.Id,
+		&object.Content,
+		&object.AttributedTo,
+	)
+	if err != nil {
+		return object, err
+	}
+	return object, nil
 }

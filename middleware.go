@@ -1,6 +1,20 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
+
+func acceptMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := checkAccept(r.Header)
+		if err != nil {
+			// serve client app
+			// fmt.Println(r.URL.RequestURI())
+			http.Redirect(w, r, config.Client+r.URL.RequestURI(), http.StatusSeeOther)
+		}
+		h.ServeHTTP(w, r)
+	})
+}
 
 func jwtMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

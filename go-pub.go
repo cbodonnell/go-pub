@@ -24,33 +24,28 @@ func main() {
 
 	// Init router
 	r := mux.NewRouter()
-	pub := r.NewRoute().Subrouter()
-	auth := r.NewRoute().Subrouter()
+	pub := r.NewRoute().Subrouter()  // -> GET from Outbox and POST to Inbox
+	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
 
-	// TODO: Break subrouters into public and auth?
-	// public -> GET from Outbox and POST to Inbox
-	// auth -> POST to Outbox and GET from Inbox
-
-	// This is a client-to-server GET of an activity
-	// g := r.Methods("GET").Subrouter()
 	pub.HandleFunc("/", home).Methods("GET")
 	pub.HandleFunc("/register", register).Methods("GET")
 
-	pub.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET")
-	// g.Use(refreshMiddleware)
+	pub.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
+	pub.Use(acceptMiddleware)
 
-	// This is a client-to-server POST of an activity
-	// p := r.Methods("POST", "OPTIONS").Subrouter()
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
-	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET")
+	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
 	auth.Use(jwtMiddleware, userMiddleware)
 
 	// Static files
+	// TODO: This should be done in a more sure way with permissions checking
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
 

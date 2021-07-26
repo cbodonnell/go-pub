@@ -6,6 +6,7 @@ type Configuration struct {
 	Port       int        `json:"port"`
 	ServerName string     `json:"serverName"`
 	Auth       string     `json:"auth"`
+	Client     string     `json:"client"`
 	Endpoints  Endpoints  `json:"endpoints"`
 	SSLCert    string     `json:"sslCert"`
 	SSLKey     string     `json:"sslKey"`
