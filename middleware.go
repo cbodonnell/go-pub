@@ -1,16 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 )
+
+// isValidURL tests a string to determine if it is a well-structured url or not.
+func isValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
+}
 
 func acceptMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := checkAccept(r.Header)
 		if err != nil {
-			// serve client app
-			// fmt.Println(r.URL.RequestURI())
-			http.Redirect(w, r, config.Client+r.URL.RequestURI(), http.StatusSeeOther)
+			// if not requesting activity serve client app
+			if isValidURL(config.Client) {
+				// if url append request URI and redirect
+				http.Redirect(w, r, config.Client+r.URL.RequestURI(), http.StatusSeeOther)
+				return
+			} else {
+				// else try and serve static site
+				http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
+				return
+			}
 		}
 		h.ServeHTTP(w, r)
 	})
