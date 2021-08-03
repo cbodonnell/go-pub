@@ -39,7 +39,7 @@ func acceptMiddleware(h http.Handler) http.Handler {
 					fmt.Println("Serving index")
 					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
 				} else {
-					fmt.Println("Serving file")
+					fmt.Println("Serving file " + config.Client+r.URL.RequestURI())
 					http.FileServer(http.Dir(config.Client)).ServeHTTP(w, r)
 				}
 				return
