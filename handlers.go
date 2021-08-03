@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
+	// "html/template"
 	"net/http"
 	"strconv"
 
@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var templates = template.Must(template.ParseGlob("static/templates/*.html"))
+// var templates = template.Must(template.ParseGlob("static/templates/*.html"))
 var acceptHeaders = http.Header{
 	"Accept": []string{
 		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
@@ -49,42 +49,6 @@ func checkAccept(headers http.Header) error {
 		}
 	}
 	return errors.New("invalid accept headers")
-}
-
-func renderTemplate(w http.ResponseWriter, template string, data interface{}) {
-	err := templates.ExecuteTemplate(w, template, data)
-	if err != nil {
-		internalServerError(w, err)
-	}
-}
-
-func home(w http.ResponseWriter, r *http.Request) {
-	claims, _ := checkJWTClaims(r)
-	data := HomeData{
-		Claims:         claims,
-		ServerName:     config.ServerName,
-		UsersEndpoint:  config.Endpoints.Users,
-		OutboxEndpoint: config.Endpoints.Outbox,
-		Auth:           config.Auth,
-	}
-	if claims != nil {
-		data.User, _ = queryUserByName(claims.Username)
-	}
-	renderTemplate(w, "index.html", data)
-}
-
-// TODO: Can this be a middleware or added to the existing auth middleware?
-func register(w http.ResponseWriter, r *http.Request) {
-	claims, err := checkJWTClaims(r)
-	if err != nil {
-		unauthorizedRequest(w, err)
-		return
-	}
-	_, err = createUser(claims.Username)
-	if err != nil {
-		badRequest(w, err)
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func getWebFinger(w http.ResponseWriter, r *http.Request) {
