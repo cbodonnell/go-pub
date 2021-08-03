@@ -35,6 +35,7 @@ func main() {
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/", clientHandler).Methods("GET", "OPTIONS")
 	pub.Use(acceptMiddleware)
 
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
