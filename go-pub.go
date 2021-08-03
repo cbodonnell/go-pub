@@ -35,7 +35,8 @@ func main() {
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
-	pub.PathPrefix("/").HandlerFunc(clientHandler).Methods("GET", "OPTIONS")
+	// pub.PathPrefix("/").HandlerFunc(clientHandler).Methods("GET", "OPTIONS")
+	pub.PathPrefix("/").Handler(http.FileServer(http.Dir(config.Client)))
 	// pub.PathPrefix("/static/").Handler(http.FileServer(http.Dir(config.Client)))
 	pub.Use(acceptMiddleware)
 
