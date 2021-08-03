@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -32,7 +33,12 @@ func acceptMiddleware(h http.Handler) http.Handler {
 				return
 			} else {
 				// else try and serve static site
-				http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
+				fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
+				if !fileRegexp.MatchString(r.URL.Path) {
+					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
+				} else {
+					http.FileServer(http.Dir(config.Client)).ServeHTTP(w, r)
+				}
 				return
 			}
 		}
