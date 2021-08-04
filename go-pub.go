@@ -27,7 +27,8 @@ func main() {
 	pub := r.NewRoute().Subrouter()  // -> GET from Outbox and POST to Inbox
 	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
 
-	pub.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+	r.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
