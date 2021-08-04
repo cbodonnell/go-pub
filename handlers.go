@@ -60,6 +60,7 @@ func getWebFinger(w http.ResponseWriter, r *http.Request) {
 	name, err := parseResource(resource)
 	if err != nil {
 		badRequest(w, err)
+		return
 	}
 
 	user, err := queryUserByName(name)
