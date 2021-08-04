@@ -1,12 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"net/url"
+	"fmt"
+)
 
 // TODO: Move this stuff into a package
 
 func generateWebFinger(name string) WebFinger {
+	// TODO: Separate into proto / host
+	u, _ := url.Parse(config.ServerName)
 	return WebFinger{
-		Subject: fmt.Sprintf("acct:%s@%s", name, config.ServerName),
+		Subject: fmt.Sprintf("acct:%s@%s", name, u.Host),
 		Aliases: []string{
 			fmt.Sprintf("%s/%s/%s", config.ServerName, config.Endpoints.Users, name),
 		},
