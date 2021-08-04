@@ -32,15 +32,13 @@ func acceptMiddleware(h http.Handler) http.Handler {
 				http.Redirect(w, r, config.Client+r.URL.RequestURI(), http.StatusSeeOther)
 				return
 			} else {
-				fmt.Println("Serving static site")
 				// else try and serve static site
 				fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
 				if !fileRegexp.MatchString(r.URL.Path) {
-					fmt.Println("Serving client")
+					// if not file, serve client app
 					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
 				} else {
-					fmt.Println("Serving file " + config.Client+r.URL.RequestURI())
-					// http.ServeFile(w, r, config.Client+r.URL.RequestURI())
+					// else serve static file
 					http.FileServer(http.Dir(config.Client)).ServeHTTP(w, r)
 				}
 				return

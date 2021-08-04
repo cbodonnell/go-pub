@@ -51,8 +51,8 @@ func checkAccept(headers http.Header) error {
 	return errors.New("invalid accept headers")
 }
 
-func clientHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Client")
+func emptyHandler(w http.ResponseWriter, r *http.Request) {
+	return
 }
 
 func getWebFinger(w http.ResponseWriter, r *http.Request) {
