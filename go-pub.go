@@ -24,10 +24,11 @@ func main() {
 
 	// Init router
 	r := mux.NewRouter()
+	wf := r.NewRoute().Subrouter()  // -> webfinger
 	pub := r.NewRoute().Subrouter()  // -> GET from Outbox and POST to Inbox
 	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
 
-	r.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
