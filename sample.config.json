@@ -1,7 +1,6 @@
 {
     "debug": true,
     "port": 80,
-    "protocol": "http",
     "serverName": "localhost",
     "auth": "http://localhost:8080/auth",
     "client": "http://localhost:3000",

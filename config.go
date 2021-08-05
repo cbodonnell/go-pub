@@ -11,7 +11,6 @@ import (
 
 var config Configuration
 
-// TODO: Can set config.Protocol from here instead of hard-coded in json
 func getConfig(ENV string) Configuration {
 	file, err := os.Open(fmt.Sprintf("config.%s.json", ENV))
 	if err != nil {
@@ -23,6 +22,11 @@ func getConfig(ENV string) Configuration {
 	err = decoder.Decode(&config)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if config.SSLCert == "" {
+		config.Protocol = "http"
+	} else {
+		config.Protocol = "https"
 	}
 	return config
 }
