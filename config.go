@@ -11,6 +11,7 @@ import (
 
 var config Configuration
 
+// TODO: Can set config.Protocol from here instead of hard-coded in json
 func getConfig(ENV string) Configuration {
 	file, err := os.Open(fmt.Sprintf("config.%s.json", ENV))
 	if err != nil {

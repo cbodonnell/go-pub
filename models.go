@@ -4,6 +4,7 @@ package main
 type Configuration struct {
 	Debug      bool       `json:"debug"`
 	Port       int        `json:"port"`
+	Protocol   string     `json:"protocol"`
 	ServerName string     `json:"serverName"`
 	Auth       string     `json:"auth"`
 	Client     string     `json:"client"`

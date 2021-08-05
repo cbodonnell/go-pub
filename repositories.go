@@ -64,7 +64,7 @@ func createUser(name string) (string, error) {
 	sql := `INSERT INTO users (name, discoverable, iri)
 	VALUES ($1, true, $2)`
 
-	iri := fmt.Sprintf("%s/%s/%s", config.ServerName, config.Endpoints.Users, name)
+	iri := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
 	_, err := db.Exec(context.Background(), sql, name, iri)
 	if err != nil {
 		return iri, err
@@ -145,7 +145,7 @@ func queryOutboxTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s/%s/%s", config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 	).Scan(
 		&count,
 	)
@@ -162,7 +162,7 @@ func queryOutboxByUserName(name string) ([]Activity, error) {
 	ORDER BY id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s/%s/%s", config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -283,7 +283,7 @@ func createOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string) 
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	objectArb["id"] = fmt.Sprintf("%s/%s/%d", config.ServerName, config.Endpoints.Objects, object_id)
+	objectArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Objects, object_id)
 	sql = `UPDATE objects
 	SET iri = $1
 	WHERE id = $2;`
@@ -300,7 +300,7 @@ func createOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string) 
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	activityArb["id"] = fmt.Sprintf("%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
@@ -358,7 +358,7 @@ func createOutboxReferenceActivity(activityArb arb.Arb, actor string) (arb.Arb, 
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	activityArb["id"] = fmt.Sprintf("%s/%s/%d", config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
