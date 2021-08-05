@@ -92,7 +92,7 @@ type WebFingerLink struct {
 
 // Object struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object)
 type Object struct {
-	Context []string `json:"@context"`
+	Context []interface{} `json:"@context"`
 	Id      string   `json:"id"`
 	Type    string   `json:"type"`
 
@@ -114,7 +114,7 @@ type Object struct {
 	Summary      string   `json:"summary,omitempty"`
 	Tag          string   `json:"tag,omitempty"`
 	Updated      string   `json:"updated,omitempty"`
-	Url          *Link    `json:"url,omitempty"`
+	Url          interface{}    `json:"url,omitempty"`
 	To           []string `json:"to,omitempty"`
 	Bto          []string `json:"bto,omitempty"`
 	Cc           []string `json:"cc,omitempty"`
@@ -147,6 +147,8 @@ type Actor struct {
 	Following string `json:"following"`
 	Followers string `json:"followers"`
 	Liked     string `json:"liked"`
+	PreferredUsername string `json:"preferredUsername"`
+	ManuallyApprovesFollowers bool `json:"manuallyApprovesFollowers"`
 }
 
 // OrderedCollection struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-orderedcollection)

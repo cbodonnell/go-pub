@@ -26,24 +26,31 @@ func generateWebFinger(name string) WebFinger {
 func generateActor(name string) Actor {
 	return Actor{
 		Object: Object{
-			Context: []string{
+			Context: []interface{} {
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
+				map[string]interface{} { 
+					"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+				},
 			},
 			Id:   fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Type: "Person",
+			Name: name,
+			Url: fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 		},
 		Inbox:     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Inbox),
 		Outbox:    fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Outbox),
 		Following: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Following),
 		Followers: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Followers),
 		Liked:     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Liked),
+		PreferredUsername: name,
+		ManuallyApprovesFollowers: false, // TODO: Implement this
 	}
 }
 
 func generateNewActivity() Activity {
 	var activity Activity
-	activity.Context = []string{
+	activity.Context = []interface{} {
 		"https://www.w3.org/ns/activitystreams",
 		"https://w3id.org/security/v1",
 	}
@@ -53,7 +60,7 @@ func generateNewActivity() Activity {
 func generateOrderedCollection(name string, endpoint string, totalItems int) OrderedCollection {
 	return OrderedCollection{
 		Object: Object{
-			Context: []string{
+			Context: []interface{} {
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
 			},
@@ -69,7 +76,7 @@ func generateOrderedCollection(name string, endpoint string, totalItems int) Ord
 func generateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}) OrderedCollectionPage {
 	return OrderedCollectionPage{
 		Object: Object{
-			Context: []string{
+			Context: []interface{} {
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
 			},
@@ -92,7 +99,7 @@ func generatePostActivity(post Note) PostActivityResource {
 
 	return PostActivityResource{
 		Object: Object{
-			Context: []string{
+			Context: []interface{} {
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
 			},
@@ -102,7 +109,7 @@ func generatePostActivity(post Note) PostActivityResource {
 		},
 		Actor: fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, post.Activity.UserName),
 		ChildObject: Object{
-			Context: []string{
+			Context: []interface{} {
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
 			},
