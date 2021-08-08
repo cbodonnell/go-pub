@@ -120,11 +120,6 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 	// 	internalServerError(w, err)
 	// 	return
 	// }
-	// activities, err := queryOutboxByUserName(user.Name)
-	// if err != nil {
-	// 	internalServerError(w, err)
-	// 	return
-	// }
 
 	activities := make([]Activity, 0)
 
@@ -285,12 +280,14 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement a method to get the following collection
-	activities, err := queryOutboxByUserName(user.Name)
-	if err != nil {
-		internalServerError(w, err)
-		return
-	}
+	// // TODO: Implement a method to get the following collection
+	// activities, err := queryOutboxByUserName(user.Name)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
+
+	activities := make([]Activity, 0)
 
 	orderedItems := make([]interface{}, len(activities))
 	for i, activity := range activities {
@@ -324,12 +321,14 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement a method to get the followers collection
-	activities, err := queryOutboxByUserName(user.Name)
-	if err != nil {
-		internalServerError(w, err)
-		return
-	}
+	// // TODO: Implement a method to get the followers collection
+	// activities, err := queryOutboxByUserName(user.Name)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
+
+	activities := make([]Activity, 0)
 
 	orderedItems := make([]interface{}, len(activities))
 	for i, activity := range activities {
@@ -363,12 +362,14 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement a method to get the liked collection
-	activities, err := queryOutboxByUserName(user.Name)
-	if err != nil {
-		internalServerError(w, err)
-		return
-	}
+	// // TODO: Implement a method to get the liked collection
+	// activities, err := queryOutboxByUserName(user.Name)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
+
+	activities := make([]Activity, 0)
 
 	orderedItems := make([]interface{}, len(activities))
 	for i, activity := range activities {
