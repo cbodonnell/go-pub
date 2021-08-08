@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -20,5 +21,5 @@ func readKey(path string) (string, error) {
 		lines = append(lines, scanner.Text())
 	}
 
-	return strings.Join(lines, "\n"), nil
+	return fmt.Sprintf("%s\n", strings.Join(lines, "\n")), nil
 }

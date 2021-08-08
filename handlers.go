@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	// "html/template"
 	"net/http"
 	"strconv"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// var templates = template.Must(template.ParseGlob("static/templates/*.html"))
 var acceptHeaders = http.Header{
 	"Accept": []string{
 		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
