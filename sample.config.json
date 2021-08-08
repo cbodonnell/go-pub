@@ -23,5 +23,7 @@
         "password": "password",
         "dbname": "database"
     },
-    "jwtKey": "secret"
+    "jwtKey": "secret",
+    "rsaPublicKey": "public.pem",
+    "rsaPrivateKey": "private.pem"
 }

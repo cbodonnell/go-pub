@@ -13,6 +13,8 @@ type Configuration struct {
 	SSLKey     string     `json:"sslKey"`
 	Db         DataSource `json:"db"`
 	JWTKey     string     `json:"jwtKey"`
+	RSAPublicKey     string     `json:"rsaPublicKey"`
+	RSAPrivateKey    string     `json:"rsaPrivateKey"`
 }
 
 // DataSource struct
