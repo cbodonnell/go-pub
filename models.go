@@ -2,19 +2,19 @@ package main
 
 // Configuration struct
 type Configuration struct {
-	Debug      bool       `json:"debug"`
-	Port       int        `json:"port"`
-	Protocol   string     `json:"protocol"`
-	ServerName string     `json:"serverName"`
-	Auth       string     `json:"auth"`
-	Client     string     `json:"client"`
-	Endpoints  Endpoints  `json:"endpoints"`
-	SSLCert    string     `json:"sslCert"`
-	SSLKey     string     `json:"sslKey"`
-	Db         DataSource `json:"db"`
-	JWTKey     string     `json:"jwtKey"`
-	RSAPublicKey     string     `json:"rsaPublicKey"`
-	RSAPrivateKey    string     `json:"rsaPrivateKey"`
+	Debug         bool       `json:"debug"`
+	Port          int        `json:"port"`
+	Protocol      string     `json:"protocol"`
+	ServerName    string     `json:"serverName"`
+	Auth          string     `json:"auth"`
+	Client        string     `json:"client"`
+	Endpoints     Endpoints  `json:"endpoints"`
+	SSLCert       string     `json:"sslCert"`
+	SSLKey        string     `json:"sslKey"`
+	Db            DataSource `json:"db"`
+	JWTKey        string     `json:"jwtKey"`
+	RSAPublicKey  string     `json:"rsaPublicKey"`
+	RSAPrivateKey string     `json:"rsaPrivateKey"`
 }
 
 // DataSource struct
@@ -95,34 +95,34 @@ type WebFingerLink struct {
 // Object struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object)
 type Object struct {
 	Context []interface{} `json:"@context"`
-	Id      string   `json:"id"`
-	Type    string   `json:"type"`
+	Id      string        `json:"id"`
+	Type    string        `json:"type"`
 
-	Attachment   string   `json:"attachment,omitempty"`
-	AttributedTo string   `json:"attributedTo,omitempty"`
-	Audience     []string `json:"audience,omitempty"`
-	Content      string   `json:"content,omitempty"`
-	Name         string   `json:"name,omitempty"`
-	EndTime      string   `json:"endTime,omitempty"`
-	Generator    string   `json:"generator,omitempty"`
-	Icon         string   `json:"icon,omitempty"`
-	Image        string   `json:"image,omitempty"`
-	InReplyTo    string   `json:"inReplyTo,omitempty"`
-	Location     string   `json:"location,omitempty"`
-	Preview      string   `json:"preview,omitempty"`
-	Published    string   `json:"published,omitempty"`
-	Replies      string   `json:"replies,omitempty"`
-	StartTime    string   `json:"startTime,omitempty"`
-	Summary      string   `json:"summary,omitempty"`
-	Tag          string   `json:"tag,omitempty"`
-	Updated      string   `json:"updated,omitempty"`
-	Url          interface{}    `json:"url,omitempty"`
-	To           []string `json:"to,omitempty"`
-	Bto          []string `json:"bto,omitempty"`
-	Cc           []string `json:"cc,omitempty"`
-	Bcc          []string `json:"bcc,omitempty"`
-	MediaType    string   `json:"mediaType,omitempty"`
-	Duration     string   `json:"duration,omitempty"`
+	Attachment   string      `json:"attachment,omitempty"`
+	AttributedTo string      `json:"attributedTo,omitempty"`
+	Audience     []string    `json:"audience,omitempty"`
+	Content      string      `json:"content,omitempty"`
+	Name         string      `json:"name,omitempty"`
+	EndTime      string      `json:"endTime,omitempty"`
+	Generator    string      `json:"generator,omitempty"`
+	Icon         string      `json:"icon,omitempty"`
+	Image        string      `json:"image,omitempty"`
+	InReplyTo    string      `json:"inReplyTo,omitempty"`
+	Location     string      `json:"location,omitempty"`
+	Preview      string      `json:"preview,omitempty"`
+	Published    string      `json:"published,omitempty"`
+	Replies      string      `json:"replies,omitempty"`
+	StartTime    string      `json:"startTime,omitempty"`
+	Summary      string      `json:"summary,omitempty"`
+	Tag          string      `json:"tag,omitempty"`
+	Updated      string      `json:"updated,omitempty"`
+	Url          interface{} `json:"url,omitempty"`
+	To           []string    `json:"to,omitempty"`
+	Bto          []string    `json:"bto,omitempty"`
+	Cc           []string    `json:"cc,omitempty"`
+	Bcc          []string    `json:"bcc,omitempty"`
+	MediaType    string      `json:"mediaType,omitempty"`
+	Duration     string      `json:"duration,omitempty"`
 }
 
 // Link struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-link)
@@ -144,13 +144,21 @@ type Link struct {
 // Actor struct
 type Actor struct {
 	Object
-	Inbox     string `json:"inbox"`
-	Outbox    string `json:"outbox"`
-	Following string `json:"following"`
-	Followers string `json:"followers"`
-	Liked     string `json:"liked"`
-	PreferredUsername string `json:"preferredUsername"`
-	ManuallyApprovesFollowers bool `json:"manuallyApprovesFollowers"`
+	Inbox                     string    `json:"inbox"`
+	Outbox                    string    `json:"outbox"`
+	Following                 string    `json:"following"`
+	Followers                 string    `json:"followers"`
+	Liked                     string    `json:"liked"`
+	PreferredUsername         string    `json:"preferredUsername"`
+	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers"`
+	PublicKey                 PublicKey `json:"publicKey"`
+}
+
+// PublicKey struct
+type PublicKey struct {
+	ID           string `json:"id"`
+	Owner        string `json:"owner"`
+	PublicKeyPem string `json:"publicKeyPem"`
 }
 
 // OrderedCollection struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-orderedcollection)
