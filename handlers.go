@@ -18,8 +18,7 @@ var acceptHeaders = http.Header{
 	},
 }
 
-// var contentType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
-var contentType = "application/activity+json"
+var contentType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
 var contentTypeHeaders = http.Header{
 	"Content-Type": []string{
 		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
