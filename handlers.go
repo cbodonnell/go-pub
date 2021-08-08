@@ -100,11 +100,12 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		totalItems, err := queryInboxTotalItemsByUserName(user.Name)
-		if err != nil {
-			internalServerError(w, err)
-			return
-		}
+		// totalItems, err := queryInboxTotalItemsByUserName(user.Name)
+		// if err != nil {
+		// 	internalServerError(w, err)
+		// 	return
+		// }
+		totalItems := 1
 
 		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox, totalItems)
 		w.Header().Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
@@ -112,15 +113,22 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := queryInboxByUserName(user.Name)
-	if err != nil {
-		internalServerError(w, err)
-		return
-	}
+	// posts, err := queryInboxByUserName(user.Name)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
+	// activities, err := queryOutboxByUserName(user.Name)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
 
-	orderedItems := make([]interface{}, len(posts))
-	for i, post := range posts {
-		orderedItems[i] = generatePostActivity(post)
+	activities := make([]Activity, 0)
+
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
 	}
 
 	inboxPage := generateOrderedCollectionPage(name, config.Endpoints.Inbox, orderedItems)

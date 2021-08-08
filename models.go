@@ -146,11 +146,11 @@ type Actor struct {
 	Object
 	Inbox                     string    `json:"inbox"`
 	Outbox                    string    `json:"outbox"`
-	Following                 string    `json:"following"`
-	Followers                 string    `json:"followers"`
-	Liked                     string    `json:"liked"`
-	PreferredUsername         string    `json:"preferredUsername"`
-	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers"`
+	Following                 string    `json:"following,omitempty"`
+	Followers                 string    `json:"followers,omitempty"`
+	Liked                     string    `json:"liked,omitempty"`
+	PreferredUsername         string    `json:"preferredUsername,omitempty"`
+	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers,omitempty"`
 	PublicKey                 PublicKey `json:"publicKey"`
 }
 
