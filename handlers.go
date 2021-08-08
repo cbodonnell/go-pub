@@ -41,6 +41,7 @@ func checkContentType(headers http.Header) error {
 func checkAccept(headers http.Header) error {
 	h := headers.Values("Accept")
 	for _, v := range h {
+		fmt.Println("Request contains Accept header: " + v)
 		for _, item := range acceptHeaders["Accept"] {
 			if v == item {
 				return nil
