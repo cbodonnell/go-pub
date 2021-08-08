@@ -177,7 +177,6 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	fmt.Println(objectArb.ToString())
 	objectIRI, err := objectArb.GetString("id")
 	if err != nil {
 		badRequest(w, err)
