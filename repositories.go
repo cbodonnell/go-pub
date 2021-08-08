@@ -223,7 +223,7 @@ func queryObjectIRIById(object_id int) (string, error) {
 func queryObjectByIRI(iri string) (Object, error) {
 	sql := `SELECT type, iri, content, attributed_to
 	FROM objects WHERE iri = $1;`
-	var object Object
+	object := generateNewObject()
 	err := db.QueryRow(context.Background(), sql, iri).Scan(
 		&object.Type,
 		&object.Id,

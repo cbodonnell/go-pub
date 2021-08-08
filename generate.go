@@ -26,13 +26,14 @@ func generateWebFinger(name string) WebFinger {
 func generateActor(name string) Actor {
 	return Actor{
 		Object: Object{
-			Context: []interface{}{
-				"https://www.w3.org/ns/activitystreams",
-				"https://w3id.org/security/v1",
-				map[string]interface{}{
-					"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
-				},
-			},
+			Context: "https://www.w3.org/ns/activitystreams",
+			// Context: []interface{}{
+			// 	"https://www.w3.org/ns/activitystreams",
+			// 	"https://w3id.org/security/v1",
+			// 	map[string]interface{}{
+			// 		"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+			// 	},
+			// },
 			Id:      fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Type:    "Person",
 			Name:    name,
@@ -44,8 +45,8 @@ func generateActor(name string) Actor {
 		Following: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Following),
 		Followers: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Followers),
 		// Liked:                     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Liked),
-		PreferredUsername:         name,
-		ManuallyApprovesFollowers: false, // TODO: Implement this
+		PreferredUsername: name,
+		// ManuallyApprovesFollowers: false, // TODO: Implement this
 		PublicKey: PublicKey{
 			ID:           fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Owner:        fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
@@ -61,6 +62,15 @@ func generateNewActivity() Activity {
 		"https://w3id.org/security/v1",
 	}
 	return activity
+}
+
+func generateNewObject() Object {
+	var object Object
+	object.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return object
 }
 
 func generateOrderedCollection(name string, endpoint string, totalItems int) OrderedCollection {
