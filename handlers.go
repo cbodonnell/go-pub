@@ -52,7 +52,8 @@ func checkAccept(headers http.Header) error {
 	return errors.New("invalid accept headers")
 }
 
-func emptyHandler(w http.ResponseWriter, r *http.Request) {
+func sinkHandler(w http.ResponseWriter, r *http.Request) {
+	notFound(w, errors.New("endpoint does not exist"))
 	return
 }
 

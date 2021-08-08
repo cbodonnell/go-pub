@@ -87,6 +87,7 @@ func userMiddleware(h http.Handler) http.Handler {
 			_, err = createUser(claims.Username)
 			if err != nil {
 				badRequest(w, err)
+				return
 			}
 		}
 		h.ServeHTTP(w, r)

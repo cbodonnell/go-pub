@@ -27,6 +27,7 @@ func main() {
 	wf := r.NewRoute().Subrouter()   // -> webfinger
 	pub := r.NewRoute().Subrouter()  // -> GET from Outbox and POST to Inbox
 	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
+	sink := r.NewRoute().Subrouter() // -> sink to handle all other routes
 
 	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
@@ -37,12 +38,14 @@ func main() {
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
-	pub.PathPrefix("/").HandlerFunc(emptyHandler).Methods("GET", "OPTIONS")
 	pub.Use(acceptMiddleware)
 
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
 	auth.Use(jwtMiddleware, userMiddleware)
+
+	sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
+	pub.Use(acceptMiddleware)
 
 	// Static files
 	// TODO: This should be done in a more sure way with permissions checking
