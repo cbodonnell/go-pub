@@ -35,7 +35,7 @@ ALTER TABLE public.activities ADD CONSTRAINT activities_object_id_fk FOREIGN KEY
 -- public.activities_to definition
 
 CREATE TABLE public.activities_to (
-	id int4 NOT NULL,
+	id serial NOT NULL,
 	activity_id int4 NOT NULL,
 	iri text NOT NULL,
 	CONSTRAINT outbox_to_pkey PRIMARY KEY (id)

@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var accept = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
 var acceptHeaders = http.Header{
 	"Accept": []string{
 		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
@@ -30,6 +31,7 @@ var contentTypeHeaders = http.Header{
 func checkContentType(headers http.Header) error {
 	h := headers.Values("Content-Type")
 	for _, v := range h {
+		fmt.Println("Request contains Content-Type header: " + v)
 		for _, item := range contentTypeHeaders["Content-Type"] {
 			if strings.Contains(v, item) {
 				return nil
@@ -135,6 +137,82 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(inboxPage)
 }
 
+func postInbox(w http.ResponseWriter, r *http.Request) {
+	// name := mux.Vars(r)["name"]
+	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, mux.Vars(r)["name"])
+	err := checkContentType(r.Header)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	// TODO: Check signature here...
+	payloadArb, err := arb.Read(r.Body)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	err = checkContext(payloadArb)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	payloadType, err := payloadArb.GetString("type")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	var activityArb arb.Arb
+	if !isActivity(payloadType) {
+		badRequest(w, err)
+		return
+	}
+	activityArb = payloadArb
+	actorIRI, err := activityArb.GetString("actor")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	objectArb, err := findObject(activityArb, acceptHeaders)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	fmt.Println(objectArb.ToString())
+	objectIRI, err := objectArb.GetString("id")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	if objectIRI != recipient {
+		badRequest(w, errors.New("wrong inbox"))
+		return
+	}
+	activityType, err := activityArb.GetString("type")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	switch activityType {
+	case "Follow":
+		activityArb, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+	default:
+		badRequest(w, errors.New("unsupported activity type"))
+		return
+		// Activity type is something else, save object reference (if new), Activity, and Activity_to
+	}
+
+	for k, l := range contentTypeHeaders {
+		for _, v := range l {
+			w.Header().Add(k, v)
+		}
+	}
+	activityArb.Write(w)
+}
+
 func getOutbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	user, err := queryUserByName(name)
@@ -222,6 +300,10 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activityType, err := activityArb.GetString("type")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
 	actor := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, claims.Username)
 	switch activityType {
 	case "Create":

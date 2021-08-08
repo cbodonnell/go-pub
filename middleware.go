@@ -26,7 +26,6 @@ func acceptMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := checkAccept(r.Header)
 		if err != nil {
-			fmt.Println("serving client...")
 			// if not requesting activity serve client app
 			if isValidURL(config.Client) {
 				// if url append request URI and redirect
@@ -45,7 +44,6 @@ func acceptMiddleware(h http.Handler) http.Handler {
 				return
 			}
 		}
-		fmt.Println("serving activity...")
 		h.ServeHTTP(w, r)
 	})
 }

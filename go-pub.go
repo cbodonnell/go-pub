@@ -32,6 +32,7 @@ func main() {
 	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
+	pub.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
 	pub.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
@@ -45,7 +46,7 @@ func main() {
 	auth.Use(jwtMiddleware, userMiddleware)
 
 	sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
-	pub.Use(acceptMiddleware)
+	sink.Use(acceptMiddleware)
 
 	// Static files
 	// TODO: This should be done in a more sure way with permissions checking
