@@ -150,7 +150,7 @@ type Actor struct {
 	Followers                 string    `json:"followers,omitempty"`
 	Liked                     string    `json:"liked,omitempty"`
 	PreferredUsername         string    `json:"preferredUsername,omitempty"`
-	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers,omitempty"`
+	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers"`
 	PublicKey                 PublicKey `json:"publicKey"`
 }
 
