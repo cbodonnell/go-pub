@@ -47,9 +47,10 @@ func generateActor(name string) Actor {
 		PreferredUsername:         name,
 		ManuallyApprovesFollowers: false, // TODO: Implement this
 		PublicKey: PublicKey{
-			ID:           fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-			Owner:        fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-			PublicKeyPem: config.RSAPublicKey,
+			ID:    fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+			Owner: fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+			// PublicKeyPem: config.RSAPublicKey,
+			PublicKeyPem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0dJ4+JclVU94jNtjhGWo\nQJIbTAhB14SsU0ysrl8nh+ohiQYMp5i/Rx3dESj+IF1N/HXOwihvkYaPryoPc6Ib\nHZIEzvj8Fp0OcrtnDFWgkVOql178wYGAsXs/Pgm+mT5euTEj7JaFgswBE8xrLg4b\nbpwK4YmfI30asBHNjhDzjdyoZlvbc95GEPTsoslEpJtCQSFd4meDr/rmX79G2dw1\ncTG+YPXPfrKrM09nTG/cLl1vt8ysXYpKpJXjnlu9sospQn0X4FSgCBNuIX9Y0REM\nn+E2h+r+/np2zF6xbdjmhBju/QQ8koRIz7JiLS4rOgpqzw/w+XX2wEWthiDKFsRC\nrwIDAQAB\n-----END PUBLIC KEY-----\n",
 		},
 	}
 }
