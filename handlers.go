@@ -142,19 +142,19 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// page := r.FormValue("page")
-	// if page != "true" {
-	// 	totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
-	// 	if err != nil {
-	// 		internalServerError(w, err)
-	// 		return
-	// 	}
+	page := r.FormValue("page")
+	if page != "true" {
+		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 
-	// 	outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox, totalItems)
-	// 	w.Header().Set("Content-Type", contentType)
-	// 	json.NewEncoder(w).Encode(outbox)
-	// 	return
-	// }
+		outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox, totalItems)
+		w.Header().Set("Content-Type", contentType)
+		json.NewEncoder(w).Encode(outbox)
+		return
+	}
 
 	activities, err := queryOutboxByUserName(user.Name)
 	if err != nil {
