@@ -38,7 +38,7 @@ func generateActor(name string) Actor {
 			Type:    "Person",
 			Name:    name,
 			Url:     fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-			Summary: fmt.Sprintf("<p>Summary of %s to come...</p>", name), // TODO: Implement this
+			Summary: fmt.Sprintf("Summary of %s to come...", name), // TODO: Implement this
 		},
 		Inbox:     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Inbox),
 		Outbox:    fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Outbox),
