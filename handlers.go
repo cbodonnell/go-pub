@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/cheebz/arb"
 	"github.com/gorilla/mux"
@@ -30,7 +31,7 @@ func checkContentType(headers http.Header) error {
 	h := headers.Values("Content-Type")
 	for _, v := range h {
 		for _, item := range contentTypeHeaders["Content-Type"] {
-			if v == item {
+			if strings.Contains(v, item) {
 				return nil
 			}
 		}
@@ -43,7 +44,7 @@ func checkAccept(headers http.Header) error {
 	for _, v := range h {
 		fmt.Println("Request contains Accept header: " + v)
 		for _, item := range acceptHeaders["Accept"] {
-			if v == item {
+			if strings.Contains(v, item) {
 				return nil
 			}
 		}
