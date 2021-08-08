@@ -26,27 +26,26 @@ func generateWebFinger(name string) WebFinger {
 func generateActor(name string) Actor {
 	return Actor{
 		Object: Object{
-			Context: "https://www.w3.org/ns/activitystreams",
-			// Context: []interface{}{
-			// 	"https://www.w3.org/ns/activitystreams",
-			// 	"https://w3id.org/security/v1",
-			// 	map[string]interface{}{
-			// 		"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
-			// 	},
-			// },
+			Context: []interface{}{
+				"https://www.w3.org/ns/activitystreams",
+				"https://w3id.org/security/v1",
+				map[string]interface{}{
+					"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+				},
+			},
 			Id:      fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Type:    "Person",
 			Name:    name,
 			Url:     fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Summary: fmt.Sprintf("Summary of %s to come...", name), // TODO: Implement this
 		},
-		Inbox:     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Inbox),
-		Outbox:    fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Outbox),
-		Following: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Following),
-		Followers: fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Followers),
-		// Liked:                     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Liked),
-		PreferredUsername: name,
-		// ManuallyApprovesFollowers: false, // TODO: Implement this
+		Inbox:                     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Inbox),
+		Outbox:                    fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Outbox),
+		Following:                 fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Following),
+		Followers:                 fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Followers),
+		Liked:                     fmt.Sprintf("%s://%s/%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name, config.Endpoints.Liked),
+		PreferredUsername:         name,
+		ManuallyApprovesFollowers: false, // TODO: Implement this
 		PublicKey: PublicKey{
 			ID:           fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			Owner:        fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),

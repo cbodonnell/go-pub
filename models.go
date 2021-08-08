@@ -144,14 +144,14 @@ type Link struct {
 // Actor struct
 type Actor struct {
 	Object
-	Inbox             string `json:"inbox"`
-	Outbox            string `json:"outbox"`
-	Following         string `json:"following,omitempty"`
-	Followers         string `json:"followers,omitempty"`
-	Liked             string `json:"liked,omitempty"`
-	PreferredUsername string `json:"preferredUsername,omitempty"`
-	// ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers"`
-	PublicKey PublicKey `json:"publicKey"`
+	Inbox                     string    `json:"inbox"`
+	Outbox                    string    `json:"outbox"`
+	Following                 string    `json:"following,omitempty"`
+	Followers                 string    `json:"followers,omitempty"`
+	Liked                     string    `json:"liked,omitempty"`
+	PreferredUsername         string    `json:"preferredUsername,omitempty"`
+	ManuallyApprovesFollowers bool      `json:"manuallyApprovesFollowers"`
+	PublicKey                 PublicKey `json:"publicKey"`
 }
 
 // PublicKey struct
