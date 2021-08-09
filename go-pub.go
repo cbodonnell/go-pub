@@ -25,21 +25,23 @@ func main() {
 	// Init router
 	r := mux.NewRouter()
 	wf := r.NewRoute().Subrouter()   // -> webfinger
-	pub := r.NewRoute().Subrouter()  // -> GET from Outbox and POST to Inbox
+	get := r.NewRoute().Subrouter()  // -> public GET requests
+	post := r.NewRoute().Subrouter() // -> public POST requests
 	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
 	sink := r.NewRoute().Subrouter() // -> sink to handle all other routes
 
 	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
-	pub.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
-	pub.Use(acceptMiddleware)
+	get.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
+	get.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
+	get.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
+	get.Use(acceptMiddleware)
+
+	post.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
 
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
