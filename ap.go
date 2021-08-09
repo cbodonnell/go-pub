@@ -69,10 +69,10 @@ func getIRI(a arb.Arb) (*url.URL, error) {
 	return nil, errors.New("unable to get iri")
 }
 
-func findObject(a arb.Arb, headers http.Header) (arb.Arb, error) {
-	iri, err := a.GetURL("object")
+func findProp(a arb.Arb, prop string, headers http.Header) (arb.Arb, error) {
+	iri, err := a.GetURL(prop)
 	if err != nil {
-		return a.GetArb("object")
+		return a.GetArb(prop)
 	}
 	client := http.DefaultClient
 	req, err := http.NewRequest("GET", iri.String(), nil)

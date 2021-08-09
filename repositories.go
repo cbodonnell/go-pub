@@ -50,10 +50,7 @@ func checkUser(name string) error {
 	WHERE name = $1`
 
 	var result int
-	err := db.QueryRow(context.Background(), sql, name).Scan(&result)
-	if err != nil {
-		return err
-	}
+	_ = db.QueryRow(context.Background(), sql, name).Scan(&result)
 	if result != 1 {
 		return errors.New("user does not exist")
 	}

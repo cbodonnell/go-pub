@@ -138,9 +138,14 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func postInbox(w http.ResponseWriter, r *http.Request) {
-	// name := mux.Vars(r)["name"]
-	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, mux.Vars(r)["name"])
-	err := checkContentType(r.Header)
+	name := mux.Vars(r)["name"]
+	err := checkUser(name)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
+	err = checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -167,12 +172,17 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activityArb = payloadArb
-	actorIRI, err := activityArb.GetString("actor")
+	actorArb, err := findProp(activityArb, "actor", acceptHeaders)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	objectArb, err := findObject(activityArb, acceptHeaders)
+	actorIRI, err := actorArb.GetString("id")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	objectArb, err := findProp(activityArb, "object", acceptHeaders)
 	if err != nil {
 		badRequest(w, err)
 		return
