@@ -12,14 +12,22 @@ func generateWebFinger(name string) WebFinger {
 		Aliases: []string{
 			fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 		},
-		Links: append(
-			[]WebFingerLink{},
-			WebFingerLink{
+		Links: []WebFingerLink{
+			{
+				Rel:  "http://webfinger.net/rel/profile-page",
+				Type: "text/html",
+				Href: fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+			},
+			{
 				Rel:  "self",
 				Type: "application/activity+json",
 				Href: fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
 			},
-		),
+			{
+				Rel:  "http://ostatus.org/schema/1.0/subscribe",
+				Href: fmt.Sprintf("%s://%s/%s", config.Protocol, config.ServerName, "/authorize_interaction?uri={uri}"),
+			},
+		},
 	}
 }
 
