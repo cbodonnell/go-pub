@@ -223,7 +223,7 @@ func federate(name string, inbox string, data []byte) {
 		signedLines = append(signedLines, h+": "+s)
 	}
 	signedString := strings.Join(signedLines, "\n")
-	// fmt.Println(signedString)
+	fmt.Println(signedString)
 
 	key, err := sigs.ReadPrivateKey([]byte(config.RSAPrivateKey))
 	if err != nil {
@@ -232,6 +232,10 @@ func federate(name string, inbox string, data []byte) {
 	sig, err := sigs.SignString(key, signedString)
 	if err != nil {
 		fmt.Println(err)
+	}
+	err = sigs.Check(signedString, sig, config.RSAPublicKey)
+	if err != nil {
+		fmt.Println("created invalid signature: " + err.Error())
 	}
 
 	sigHeader := fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
