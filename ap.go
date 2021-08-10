@@ -240,7 +240,7 @@ func federate(name string, inbox string, data []byte) {
 		strings.Join(headers, " "),
 		sig,
 	)
-	// fmt.Println(sigHeader)
+	fmt.Println(sigHeader)
 	req.Header.Set("Signature", sigHeader)
 
 	client := &http.Client{}
