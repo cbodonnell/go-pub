@@ -236,7 +236,7 @@ func federate(name string, inbox string, data []byte) {
 
 	sigHeader := fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
 		fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-		"rsa-sha256",
+		"rsa-pss-sha256",
 		strings.Join(headers, " "),
 		sig,
 	)
