@@ -201,17 +201,37 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
+	var responseArb arb.Arb
 	switch activityType {
 	case "Follow":
-		activityArb, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
+		_, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
+		responseArb, err = newActivityArb(activityArb, "Accept")
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+		responseArb["actor"] = recipient
+		responseArb, err = createOutboxActivity(activityArb, objectArb, recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+		// POST response arb to actorArb.GetString(inbox)
+		// this is federated
+		inbox, err := actorArb.GetString("inbox")
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+		go federate(name, inbox, responseArb.ToBytes())
+		fmt.Println("federated response")
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
-		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
 	for k, l := range contentTypeHeaders {
@@ -219,7 +239,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(k, v)
 		}
 	}
-	activityArb.Write(w)
+	responseArb.Write(w)
 }
 
 func getOutbox(w http.ResponseWriter, r *http.Request) {
@@ -290,7 +310,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	// TODO: Refactor into a parsePayload method
 	var activityArb arb.Arb
 	if isObject(payloadType) {
-		activityArb, err = createActivity(payloadArb)
+		activityArb, err = newActivityArb(payloadArb, "Create")
 		if err != nil {
 			badRequest(w, err)
 			return

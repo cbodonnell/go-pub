@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/cheebz/arb v0.1.4
+	github.com/cheebz/sigs v0.1.6 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgx/v4 v4.12.0
