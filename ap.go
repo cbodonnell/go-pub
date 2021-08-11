@@ -181,11 +181,12 @@ func federate(name string, inbox string, data []byte) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	for k, l := range contentTypeHeaders {
-		for _, v := range l {
-			req.Header.Add(k, v)
-		}
-	}
+	// for k, l := range contentTypeHeaders {
+	// 	for _, v := range l {
+	// 		req.Header.Add(k, v)
+	// 	}
+	// }
+	req.Header.Add("Content-Type", "application/activity+json")
 
 	// TODO: Refactor into sigs
 	headers := []string{"(request-target)", "date", "host", "content-type", "digest"}
@@ -237,6 +238,8 @@ func federate(name string, inbox string, data []byte) {
 	if err != nil {
 		fmt.Println("created invalid signature: " + err.Error())
 	}
+
+	// TODO: Fix -> Verification failed for cheebz@social.studio10b.nyc https://social.studio10b.nyc/users/cheebz using rsa-sha256 (RSASSA-PKCS1-v1_5 with SHA-256)
 
 	sigHeader := fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
 		fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
