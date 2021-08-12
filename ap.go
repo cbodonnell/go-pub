@@ -32,7 +32,7 @@ var contentTypeHeaders = http.Header{
 func checkContentType(headers http.Header) error {
 	h := headers.Values("Content-Type")
 	for _, v := range h {
-		// fmt.Println("Request contains Content-Type header: " + v)
+		fmt.Println("Request contains Content-Type header: " + v)
 		for _, item := range contentTypeHeaders["Content-Type"] {
 			if strings.Contains(v, item) {
 				return nil
@@ -45,7 +45,7 @@ func checkContentType(headers http.Header) error {
 func checkAccept(headers http.Header) error {
 	h := headers.Values("Accept")
 	for _, v := range h {
-		// fmt.Println("Request contains Accept header: " + v)
+		fmt.Println("Request contains Accept header: " + v)
 		for _, item := range acceptHeaders["Accept"] {
 			if strings.Contains(v, item) {
 				return nil
