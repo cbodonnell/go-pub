@@ -7,6 +7,10 @@ func created(w http.ResponseWriter, iri string) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func accepted(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusAccepted)
+}
+
 func badRequest(w http.ResponseWriter, err error) {
 	var msg string
 	if config.Debug {

@@ -6,53 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/cheebz/arb"
 	"github.com/gorilla/mux"
 )
-
-var accept = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
-var acceptHeaders = http.Header{
-	"Accept": []string{
-		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-		"application/activity+json",
-	},
-}
-
-var contentType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
-var contentTypeHeaders = http.Header{
-	"Content-Type": []string{
-		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-		"application/activity+json",
-	},
-}
-
-func checkContentType(headers http.Header) error {
-	h := headers.Values("Content-Type")
-	for _, v := range h {
-		fmt.Println("Request contains Content-Type header: " + v)
-		for _, item := range contentTypeHeaders["Content-Type"] {
-			if strings.Contains(v, item) {
-				return nil
-			}
-		}
-	}
-	return errors.New("invalid content-type headers")
-}
-
-func checkAccept(headers http.Header) error {
-	h := headers.Values("Accept")
-	for _, v := range h {
-		fmt.Println("Request contains Accept header: " + v)
-		for _, item := range acceptHeaders["Accept"] {
-			if strings.Contains(v, item) {
-				return nil
-			}
-		}
-	}
-	return errors.New("invalid accept headers")
-}
 
 func sinkHandler(w http.ResponseWriter, r *http.Request) {
 	notFound(w, errors.New("endpoint does not exist"))
@@ -144,34 +101,17 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
 	err = checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
 	// TODO: Check signature here...
-	payloadArb, err := arb.Read(r.Body)
+	activityArb, err := parsePayload(r)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	err = checkContext(payloadArb)
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	payloadType, err := payloadArb.GetString("type")
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	var activityArb arb.Arb
-	if !isActivity(payloadType) {
-		badRequest(w, err)
-		return
-	}
-	activityArb = payloadArb
 	actorArb, err := findProp(activityArb, "actor", acceptHeaders)
 	if err != nil {
 		badRequest(w, err)
@@ -192,6 +132,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
+	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
 	if objectIRI != recipient {
 		badRequest(w, errors.New("wrong inbox"))
 		return
@@ -209,6 +150,11 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
+		inbox, err := actorArb.GetString("inbox")
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
 		responseArb, err = newActivityArb(activityArb, "Accept")
 		if err != nil {
 			internalServerError(w, err)
@@ -220,15 +166,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		// POST response arb to actorArb.GetString(inbox)
-		// this is federated
-		inbox, err := actorArb.GetString("inbox")
-		if err != nil {
-			internalServerError(w, err)
-			return
-		}
 		go federate(name, inbox, responseArb.ToBytes())
-		fmt.Println("federated response")
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
@@ -240,6 +178,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	responseArb.Write(w)
+	accepted(w)
 }
 
 func getOutbox(w http.ResponseWriter, r *http.Request) {
@@ -292,39 +231,8 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	payloadArb, err := arb.Read(r.Body)
+	activityArb, err := parsePayload(r)
 	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	err = checkContext(payloadArb)
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	payloadType, err := payloadArb.GetString("type")
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
-	// TODO: Refactor into a parsePayload method
-	var activityArb arb.Arb
-	if isObject(payloadType) {
-		activityArb, err = newActivityArb(payloadArb, "Create")
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
-	}
-	if isActivity(payloadType) {
-		activityArb = payloadArb
-		err = formatRecipients(activityArb)
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
-	}
-	if activityArb == nil {
 		badRequest(w, err)
 		return
 	}
@@ -358,8 +266,10 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
-	// TODO: Propagate Activity <-- Can this be done with a concurrent worker
+	// TODO: federate activity to recipients
 	// by passing the activity into a channel?
+	// maybe pass these args as obj into chan? look into chans more!
+	// go federate(claims.Username, inbox, activityArb.ToBytes())
 
 	for k, l := range contentTypeHeaders {
 		for _, v := range l {
@@ -400,11 +310,11 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	activities := make([]Activity, 0)
+	following := make([]interface{}, 0)
 
-	orderedItems := make([]interface{}, len(activities))
-	for i, activity := range activities {
-		orderedItems[i] = activity
+	orderedItems := make([]interface{}, len(following))
+	for i, actor := range following {
+		orderedItems[i] = actor
 	}
 
 	followingPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Following, orderedItems)
@@ -441,11 +351,11 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	activities := make([]Activity, 0)
+	followers := make([]interface{}, 0)
 
-	orderedItems := make([]interface{}, len(activities))
-	for i, activity := range activities {
-		orderedItems[i] = activity
+	orderedItems := make([]interface{}, len(followers))
+	for i, actor := range followers {
+		orderedItems[i] = actor
 	}
 
 	followersPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Followers, orderedItems)
@@ -482,10 +392,10 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	activities := make([]Activity, 0)
+	liked := make([]interface{}, 0)
 
-	orderedItems := make([]interface{}, len(activities))
-	for i, activity := range activities {
+	orderedItems := make([]interface{}, len(liked))
+	for i, activity := range liked {
 		orderedItems[i] = activity
 	}
 

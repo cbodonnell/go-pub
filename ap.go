@@ -8,11 +8,52 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/cheebz/arb"
 	"github.com/cheebz/sigs"
 )
+
+var accept = "application/activity+json"
+var acceptHeaders = http.Header{
+	"Accept": []string{
+		"application/activity+json",
+		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+	},
+}
+
+var contentType = "application/activity+json"
+var contentTypeHeaders = http.Header{
+	"Content-Type": []string{
+		"application/activity+json",
+		"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+	},
+}
+
+func checkContentType(headers http.Header) error {
+	h := headers.Values("Content-Type")
+	for _, v := range h {
+		// fmt.Println("Request contains Content-Type header: " + v)
+		for _, item := range contentTypeHeaders["Content-Type"] {
+			if strings.Contains(v, item) {
+				return nil
+			}
+		}
+	}
+	return errors.New("invalid content-type headers")
+}
+
+func checkAccept(headers http.Header) error {
+	h := headers.Values("Accept")
+	for _, v := range h {
+		// fmt.Println("Request contains Accept header: " + v)
+		for _, item := range acceptHeaders["Accept"] {
+			if strings.Contains(v, item) {
+				return nil
+			}
+		}
+	}
+	return errors.New("invalid accept headers")
+}
 
 var activityTypes = []string{"Accept", "Add", "Announce", "Arrive", "Block", "Create", "Delete", "Dislike", "Flag", "Follow", "Ignore", "Invite", "Join", "Leave", "Like", "Listen", "Move", "Offer", "Question", "Reject", "Read", "Remove", "TentativeReject", "TentativeAccept", "Travel", "Undo", "Update", "View"}
 var actorTypes = []string{"Application", "Group", "Organization", "Person", "Service"}
@@ -121,6 +162,39 @@ func checkContext(payload arb.Arb) error {
 	return errors.New("\"https://www.w3.org/ns/activitystreams\" not in context")
 }
 
+func parsePayload(r *http.Request) (arb.Arb, error) {
+	payloadArb, err := arb.Read(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = checkContext(payloadArb)
+	if err != nil {
+		return nil, err
+	}
+	payloadType, err := payloadArb.GetString("type")
+	if err != nil {
+		return nil, err
+	}
+	var activityArb arb.Arb
+	if isObject(payloadType) {
+		activityArb, err = newActivityArb(payloadArb, "Create")
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isActivity(payloadType) {
+		activityArb = payloadArb
+		err = formatRecipients(activityArb)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if activityArb == nil {
+		return nil, err
+	}
+	return activityArb, nil
+}
+
 func newActivityArb(object arb.Arb, typ string) (arb.Arb, error) {
 	activity := arb.New()
 	activity["@context"] = []string{"https://www.w3.org/ns/activitystreams"}
@@ -181,74 +255,17 @@ func federate(name string, inbox string, data []byte) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	// for k, l := range contentTypeHeaders {
-	// 	for _, v := range l {
-	// 		req.Header.Add(k, v)
-	// 	}
-	// }
-	req.Header.Add("Content-Type", "application/activity+json")
-
-	// TODO: Refactor into sigs
-	headers := []string{"(request-target)", "date", "host", "content-type", "digest"}
-	var signedLines []string
-	for _, h := range headers {
-		var s string
-		switch h {
-		case "(request-target)":
-			s = strings.ToLower(req.Method) + " " + req.URL.RequestURI()
-		case "date":
-			s = req.Header.Get(h)
-			if s == "" {
-				s = time.Now().UTC().Format(http.TimeFormat)
-				req.Header.Set(h, s)
-			}
-		case "host":
-			s = req.Header.Get(h)
-			if s == "" {
-				s = req.URL.Hostname()
-				req.Header.Set(h, s)
-			}
-		case "content-type":
-			s = req.Header.Get(h)
-		case "digest":
-			s = req.Header.Get(h)
-			if s == "" {
-				digest, err := sigs.Digest(data)
-				if err != nil {
-					fmt.Println(err)
-				}
-				s = fmt.Sprintf("SHA-256=%s", digest)
-				req.Header.Set(h, s)
-			}
+	for k, l := range contentTypeHeaders {
+		for _, v := range l {
+			req.Header.Add(k, v)
 		}
-		signedLines = append(signedLines, h+": "+s)
 	}
-	signedString := strings.Join(signedLines, "\n")
-	fmt.Println(signedString)
 
-	key, err := sigs.ReadPrivateKey([]byte(config.RSAPrivateKey))
+	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name)
+	err = sigs.SignRequest(req, data, config.RSAPrivateKey, keyID)
 	if err != nil {
 		fmt.Println(err)
 	}
-	sig, err := sigs.SignString(key, signedString)
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = sigs.Check(signedString, sig, config.RSAPublicKey)
-	if err != nil {
-		fmt.Println("created invalid signature: " + err.Error())
-	}
-
-	// TODO: Fix -> Verification failed for cheebz@social.studio10b.nyc https://social.studio10b.nyc/users/cheebz using rsa-sha256 (RSASSA-PKCS1-v1_5 with SHA-256)
-
-	sigHeader := fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
-		fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-		"rsa-sha256",
-		strings.Join(headers, " "),
-		sig,
-	)
-	fmt.Println(sigHeader)
-	req.Header.Set("Signature", sigHeader)
 
 	client := &http.Client{}
 	response, err := client.Do(req)
@@ -257,11 +274,11 @@ func federate(name string, inbox string, data []byte) {
 	}
 	defer response.Body.Close()
 
-	fmt.Println("response Status:", response.Status)
-	fmt.Println("response Headers:", response.Header)
+	fmt.Println(fmt.Sprintf("POST to %s/%s", req.URL.Hostname(), req.URL.RequestURI()))
+	fmt.Println(fmt.Sprintf("%s/%s code: %s", req.URL.Hostname(), req.URL.RequestURI(), response.Status))
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("response Body:", string(body))
+	fmt.Println(fmt.Sprintf("%s/%s body: %s", req.URL.Hostname(), req.URL.RequestURI(), string(body)))
 }

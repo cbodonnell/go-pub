@@ -48,6 +48,17 @@ func acceptMiddleware(h http.Handler) http.Handler {
 	})
 }
 
+func contentTypeMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := checkContentType(r.Header)
+		if err != nil {
+			badRequest(w, err)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
 func jwtMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := checkJWTClaims(r)
