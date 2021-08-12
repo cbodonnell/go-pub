@@ -10,6 +10,9 @@ import (
 	"github.com/rs/cors"
 )
 
+var logChan = make(chan string)
+var fedChan = make(chan Federation)
+
 func main() {
 	// Get configuration
 	ENV := os.Getenv("ENV")
@@ -42,7 +45,7 @@ func main() {
 	get.Use(acceptMiddleware)
 
 	post.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
-	get.Use(contentTypeMiddleware)
+	post.Use(contentTypeMiddleware)
 
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
 	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
@@ -55,6 +58,10 @@ func main() {
 	// TODO: This should be done in a more sure way with permissions checking
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
 	// r.Use(jwtMiddleware)
+
+	// TODO: Start federation worker
+	go handleLogs()
+	go handleFederation()
 
 	// Run server
 	port := config.Port

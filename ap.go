@@ -250,10 +250,10 @@ func formatRecipients(a arb.Arb) error {
 	return nil
 }
 
-func federate(name string, inbox string, data []byte) {
-	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(data))
+func (fed Federation) Federate() {
+	req, err := http.NewRequest("POST", fed.Inbox, bytes.NewBuffer(fed.Data))
 	if err != nil {
-		fmt.Println(err)
+		logChan <- err.Error()
 	}
 	for k, l := range contentTypeHeaders {
 		for _, v := range l {
@@ -261,24 +261,24 @@ func federate(name string, inbox string, data []byte) {
 		}
 	}
 
-	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, name)
-	err = sigs.SignRequest(req, data, config.RSAPrivateKey, keyID)
+	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, fed.Name)
+	err = sigs.SignRequest(req, fed.Data, config.RSAPrivateKey, keyID)
 	if err != nil {
-		fmt.Println(err)
+		logChan <- err.Error()
 	}
 
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		logChan <- err.Error()
 	}
 	defer response.Body.Close()
 
-	fmt.Println(fmt.Sprintf("POST to %s/%s", req.URL.Hostname(), req.URL.RequestURI()))
-	fmt.Println(fmt.Sprintf("%s/%s code: %s", req.URL.Hostname(), req.URL.RequestURI(), response.Status))
+	logChan <- fmt.Sprintf("POST to %s/%s", req.URL.Hostname(), req.URL.RequestURI())
+	logChan <- fmt.Sprintf("%s/%s code: %s", req.URL.Hostname(), req.URL.RequestURI(), response.Status)
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println(err)
+		logChan <- err.Error()
 	}
-	fmt.Println(fmt.Sprintf("%s/%s body: %s", req.URL.Hostname(), req.URL.RequestURI(), string(body)))
+	logChan <- fmt.Sprintf("%s/%s body: %s", req.URL.Hostname(), req.URL.RequestURI(), string(body))
 }

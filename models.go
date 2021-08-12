@@ -189,3 +189,9 @@ type Activity struct {
 	Actor       string      `json:"actor"`
 	ChildObject interface{} `json:"object"`
 }
+
+type Federation struct {
+	Name  string
+	Inbox string
+	Data  []byte
+}

@@ -166,7 +166,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		go federate(name, inbox, responseArb.ToBytes())
+		fedChan <- Federation{Name: name, Inbox: inbox, Data: responseArb.ToBytes()}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
