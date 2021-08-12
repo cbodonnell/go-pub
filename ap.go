@@ -274,11 +274,11 @@ func (fed Federation) Federate() {
 	}
 	defer response.Body.Close()
 
-	logChan <- fmt.Sprintf("POST to %s/%s", req.URL.Hostname(), req.URL.RequestURI())
-	logChan <- fmt.Sprintf("%s/%s code: %s", req.URL.Hostname(), req.URL.RequestURI(), response.Status)
+	logChan <- fmt.Sprintf("POST to %s", req.URL.Hostname()+req.URL.RequestURI())
+	logChan <- fmt.Sprintf("%s code: %s", req.URL.Hostname()+req.URL.RequestURI(), response.Status)
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logChan <- err.Error()
 	}
-	logChan <- fmt.Sprintf("%s/%s body: %s", req.URL.Hostname(), req.URL.RequestURI(), string(body))
+	logChan <- fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body))
 }
