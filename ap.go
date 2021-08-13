@@ -216,6 +216,14 @@ func newActivityArb(object arb.Arb, typ string) (arb.Arb, error) {
 	return activity, nil
 }
 
+func newActivityArbReference(objectIRI string, typ string) (arb.Arb, error) {
+	activity := arb.New()
+	activity["@context"] = []string{"https://www.w3.org/ns/activitystreams"}
+	activity["type"] = typ
+	activity["object"] = objectIRI
+	return activity, nil
+}
+
 func formatRecipients(a arb.Arb) error {
 	if a.Exists("to") {
 		err := a.PropToArray("to")

@@ -112,6 +112,11 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
+	activityIRI, err := activityArb.GetString("id")
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
 	actorArb, err := findProp(activityArb, "actor", acceptHeaders)
 	if err != nil {
 		badRequest(w, err)
@@ -155,13 +160,13 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, err)
 			return
 		}
-		responseArb, err = newActivityArb(activityArb, "Accept")
+		responseArb, err = newActivityArbReference(activityIRI, "Accept")
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 		responseArb["actor"] = recipient
-		responseArb, err = createOutboxActivity(responseArb, activityArb, recipient)
+		responseArb, err = createOutboxReferenceActivity(responseArb, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -172,13 +177,9 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for k, l := range contentTypeHeaders {
-		for _, v := range l {
-			w.Header().Add(k, v)
-		}
-	}
-	responseArb.Write(w)
+	w.Header().Set("Content-Type", contentType)
 	accepted(w)
+	responseArb.Write(w)
 }
 
 func getOutbox(w http.ResponseWriter, r *http.Request) {
@@ -249,7 +250,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, err)
 			return
 		}
-		activityArb, err = createOutboxActivity(activityArb, objectArb, actor)
+		activityArb, err = createOutboxActivityDetail(activityArb, objectArb, actor)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -271,11 +272,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	// maybe pass these args as obj into chan? look into chans more!
 	// go federate(claims.Username, inbox, activityArb.ToBytes())
 
-	for k, l := range contentTypeHeaders {
-		for _, v := range l {
-			w.Header().Add(k, v)
-		}
-	}
+	w.Header().Set("Content-Type", contentType)
 	iri, err := activityArb.GetString("id")
 	created(w, iri)
 	activityArb.Write(w)

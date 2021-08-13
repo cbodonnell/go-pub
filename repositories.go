@@ -295,8 +295,8 @@ func createInboxActivity(activityArb arb.Arb, object string, actor string, recip
 	return activityArb, nil
 }
 
-// Create a new outbox Activity with full details
-func createOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string) (arb.Arb, error) {
+// Create a new outbox Activity with full object details
+func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
