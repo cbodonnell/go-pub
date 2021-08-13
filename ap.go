@@ -255,11 +255,12 @@ func (fed Federation) Federate() {
 	if err != nil {
 		logChan <- err.Error()
 	}
-	for k, l := range contentTypeHeaders {
-		for _, v := range l {
-			req.Header.Add(k, v)
-		}
-	}
+	// for k, l := range contentTypeHeaders {
+	// 	for _, v := range l {
+	// 		req.Header.Add(k, v)
+	// 	}
+	// }
+	req.Header.Add("Content-Type", contentType)
 
 	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, fed.Name)
 	err = sigs.SignRequest(req, fed.Data, config.RSAPrivateKey, keyID)
