@@ -1,5 +1,7 @@
 -- Drop tables
 
+-- DROP TABLE public.users;
+
 -- DROP TABLE public.activities_to;
 
 -- DROP TABLE public.activities;
@@ -8,11 +10,21 @@
 
 -- Create tables
 
+-- public.users definition
+
+CREATE TABLE public.users (
+	id serial NOT NULL,
+	"name" text NOT NULL,
+	discoverable bool NOT NULL,
+	iri text NOT NULL,
+	CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
 -- public.objects definition
 
 CREATE TABLE public.objects (
 	id serial NOT NULL,
-	"type" text NOT NULL,
+	"type" text NULL,
 	iri text NULL,
 	"content" text NULL,
 	attributed_to text NULL,
@@ -42,3 +54,5 @@ CREATE TABLE public.activities_to (
 );
 
 ALTER TABLE public.activities_to ADD CONSTRAINT activities_to_activity_id_fk FOREIGN KEY (activity_id) REFERENCES public.activities(id);
+
+
