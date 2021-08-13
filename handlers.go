@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cheebz/arb"
 	"github.com/gorilla/mux"
 )
 
@@ -101,6 +100,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
+	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
 	err = checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
@@ -137,19 +137,24 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
-	if objectIRI != recipient {
-		badRequest(w, errors.New("wrong inbox"))
-		return
-	}
 	activityType, err := activityArb.GetString("type")
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	var responseArb arb.Arb
+	// var responseArb arb.Arb
 	switch activityType {
+	case "Create":
+		_, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 	case "Follow":
+		if objectIRI != recipient {
+			badRequest(w, errors.New("wrong inbox"))
+			return
+		}
 		_, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
 		if err != nil {
 			internalServerError(w, err)
@@ -160,7 +165,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, err)
 			return
 		}
-		responseArb, err = newActivityArbReference(activityIRI, "Accept")
+		responseArb, err := newActivityArbReference(activityIRI, "Accept")
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -177,9 +182,9 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", contentType)
+	// w.Header().Set("Content-Type", contentType)
 	accepted(w)
-	responseArb.Write(w)
+	// activityArb.Write(w)
 }
 
 func getOutbox(w http.ResponseWriter, r *http.Request) {
