@@ -161,7 +161,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		responseArb["actor"] = recipient
-		responseArb, err = createOutboxActivity(activityArb, objectArb, recipient)
+		responseArb, err = createOutboxActivity(responseArb, activityArb, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
