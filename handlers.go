@@ -142,7 +142,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 	// var responseArb arb.Arb
 	switch activityType {
 	case "Create":
-		_, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
+		_, err = createInboxActivity(activityArb, objectIRI, actorIRI, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
