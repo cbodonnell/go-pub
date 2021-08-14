@@ -70,15 +70,10 @@ func createUser(name string) (string, error) {
 }
 
 func queryInboxTotalItemsByUserName(name string) (int, error) {
-	sql := `SELECT COUNT(ps.*)
-	FROM notes as ps
-	INNER JOIN activities as act
-	ON act.object_id = ps.id
-	INNER JOIN activities_to as act_to
-	ON act_to.activity_id = act.id
-	INNER JOIN users as us
-	ON us.id = act_to.to
-	WHERE us.name = $1`
+	sql := `SELECT COUNT(act.*)
+	FROM activities as act
+	JOIN activities_to AS act_to ON act_to.activity_id = act.id
+	WHERE activities_to.iri = $1`
 
 	var count int
 	err := db.QueryRow(context.Background(), sql, name).Scan(
@@ -90,50 +85,57 @@ func queryInboxTotalItemsByUserName(name string) (int, error) {
 	return count, nil
 }
 
-func queryInboxByUserName(name string) ([]Note, error) {
-	sql := `SELECT ps.*, act.id, act.user_name, act.type, us.url
-	FROM notes as ps
-	INNER JOIN activities as act
-	ON act.object_id = ps.id
-	INNER JOIN activities_to as act_to
-	ON act_to.activity_id = act.id
-	INNER JOIN users as us
-	ON us.id = act_to.to
-	WHERE us.name = $1
-	ORDER BY act.id DESC`
+func queryInboxByUserName(name string) ([]Activity, error) {
+	sql := `SELECT act.*
+	FROM activities as act
+	JOIN activities_to AS act_to ON act_to.activity_id = act.id
+	WHERE act_to.iri = $1
+	ORDER BY id DESC`
 
-	rows, err := db.Query(context.Background(), sql, name)
+	rows, err := db.Query(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var notes []Note
+	var activities []Activity
 	for rows.Next() {
-		var note Note
-		var activity ActivityOLD
-		var to string
+		var activity_id int
+		var object_id int
+		activity := generateNewActivity()
 		err = rows.Scan(
-			&note.ID,
-			&note.UserName,
-			&note.Content,
-			&activity.ID,
-			&activity.UserName,
+			&activity_id,
 			&activity.Type,
-			&to,
+			&activity.Actor,
+			&object_id,
+			&activity.Id,
 		)
 		if err != nil {
-			return notes, err
+			return activities, err
 		}
-		// TODO: Do this a better way... maybe a second query?
-		activity.To = []string{to}
-		note.Activity = activity
-		notes = append(notes, note)
+		object_iri, err := queryObjectIRIById(object_id)
+		if err != nil {
+			return activities, err
+		}
+		object, err := queryObjectByIRI(object_iri)
+		if err != nil {
+			activity.ChildObject = object_iri
+
+		} else {
+			activity.ChildObject = object
+		}
+		activity.To, err = queryToByActivityId(activity_id)
+		if err != nil {
+			return activities, err
+		}
+		activities = append(activities, activity)
 	}
 	err = rows.Err()
 	if err != nil {
-		return notes, err
+		return activities, err
 	}
-	return notes, nil
+	return activities, nil
 }
 
 func queryOutboxTotalItemsByUserName(name string) (int, error) {

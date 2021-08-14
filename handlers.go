@@ -62,12 +62,11 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		// totalItems, err := queryInboxTotalItemsByUserName(user.Name)
-		// if err != nil {
-		// 	internalServerError(w, err)
-		// 	return
-		// }
-		totalItems := 1
+		totalItems, err := queryInboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 
 		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox, totalItems)
 		w.Header().Set("Content-Type", contentType)
@@ -75,13 +74,11 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// posts, err := queryInboxByUserName(user.Name)
-	// if err != nil {
-	// 	internalServerError(w, err)
-	// 	return
-	// }
-
-	activities := make([]Activity, 0)
+	activities, err := queryInboxByUserName(user.Name)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 
 	orderedItems := make([]interface{}, len(activities))
 	for i, activity := range activities {
