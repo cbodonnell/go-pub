@@ -59,6 +59,11 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 		notFound(w, err)
 		return
 	}
+	claims, _ := checkJWTClaims(r)
+	if claims.Username != name {
+		unauthorizedRequest(w, errors.New("not your outbox"))
+		return
+	}
 
 	page := r.FormValue("page")
 	if page != "true" {
