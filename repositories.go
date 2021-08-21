@@ -73,7 +73,7 @@ func queryInboxTotalItemsByUserName(name string) (int, error) {
 	sql := `SELECT COUNT(act.*)
 	FROM activities as act
 	JOIN activities_to AS act_to ON act_to.activity_id = act.id
-	WHERE activities_to.iri = $1`
+	WHERE act_to.iri = $1`
 
 	var count int
 	err := db.QueryRow(context.Background(), sql, name).Scan(
