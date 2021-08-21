@@ -30,7 +30,7 @@ func main() {
 	wf := r.NewRoute().Subrouter()   // -> webfinger
 	get := r.NewRoute().Subrouter()  // -> public GET requests
 	post := r.NewRoute().Subrouter() // -> public POST requests
-	auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
+	// auth := r.NewRoute().Subrouter() // -> POST to Outbox and GET from Inbox
 	sink := r.NewRoute().Subrouter() // -> sink to handle all other routes
 
 	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
@@ -47,9 +47,13 @@ func main() {
 	post.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
 	post.Use(contentTypeMiddleware)
 
-	auth.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
-	auth.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
-	auth.Use(jwtMiddleware, userMiddleware)
+	aGet := get.NewRoute().Subrouter()
+	aGet.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
+	aGet.Use(jwtMiddleware, userMiddleware)
+
+	aPost := post.NewRoute().Subrouter()
+	aPost.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
+	aPost.Use(jwtMiddleware, userMiddleware)
 
 	sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
 	sink.Use(acceptMiddleware)
