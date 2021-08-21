@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -61,7 +62,7 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	claims, _ := checkJWTClaims(r)
 	if claims.Username != name {
-		unauthorizedRequest(w, errors.New("not your outbox"))
+		unauthorizedRequest(w, errors.New("not your inbox"))
 		return
 	}
 
@@ -162,11 +163,6 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		inbox, err := actorArb.GetString("inbox")
-		if err != nil {
-			badRequest(w, err)
-			return
-		}
 		responseArb, err := newActivityArbReference(activityIRI, "Accept")
 		if err != nil {
 			internalServerError(w, err)
@@ -178,7 +174,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		fedChan <- Federation{Name: name, Inbox: inbox, Data: responseArb.ToBytes()}
+		fedChan <- Federation{Name: name, Recipient: actorIRI, Data: responseArb.ToBytes()}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
@@ -274,10 +270,24 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
-	// TODO: federate activity to recipients
-	// by passing the activity into a channel?
-	// maybe pass these args as obj into chan? look into chans more!
-	// go federate(claims.Username, inbox, activityArb.ToBytes())
+	// TODO: able to combine this with above?
+	activityArb["actor"] = actor
+
+	// TODO: create AP method to get as an array of URLs
+	recipients, err := activityArb.GetArray("to")
+	if err == nil {
+		for _, recipient := range recipients {
+			if iri, ok := recipient.(string); ok {
+				if iriURL, err := url.Parse(iri); err == nil {
+					if iriURL.Host != config.ServerName {
+						fedChan <- Federation{Name: name, Recipient: iri, Data: activityArb.ToBytes()}
+					}
+					err = addActivityTo(activityArb, iri)
+				}
+
+			}
+		}
+	}
 
 	w.Header().Set("Content-Type", contentType)
 	iri, err := activityArb.GetString("id")

@@ -93,21 +93,22 @@ type WebFingerLink struct {
 }
 
 // Object struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object)
+// TODO: Should some of these be sql.NullString?
 type Object struct {
 	Context interface{} `json:"@context"`
 	Id      string      `json:"id"`
 	Type    string      `json:"type"`
 
 	Attachment   string      `json:"attachment,omitempty"`
-	AttributedTo string      `json:"attributedTo,omitempty"`
+	AttributedTo interface{} `json:"attributedTo,omitempty"`
 	Audience     []string    `json:"audience,omitempty"`
-	Content      string      `json:"content,omitempty"`
+	Content      interface{} `json:"content,omitempty"`
 	Name         string      `json:"name,omitempty"`
 	EndTime      string      `json:"endTime,omitempty"`
 	Generator    string      `json:"generator,omitempty"`
 	Icon         string      `json:"icon,omitempty"`
 	Image        string      `json:"image,omitempty"`
-	InReplyTo    string      `json:"inReplyTo,omitempty"`
+	InReplyTo    interface{} `json:"inReplyTo,omitempty"`
 	Location     string      `json:"location,omitempty"`
 	Preview      string      `json:"preview,omitempty"`
 	Published    string      `json:"published,omitempty"`
@@ -191,7 +192,7 @@ type Activity struct {
 }
 
 type Federation struct {
-	Name  string
-	Inbox string
-	Data  []byte
+	Name      string
+	Recipient string
+	Data      []byte
 }

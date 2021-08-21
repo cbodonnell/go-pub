@@ -28,6 +28,7 @@ CREATE TABLE public.objects (
 	iri text NULL,
 	"content" text NULL,
 	attributed_to text NULL,
+	in_reply_to text NULL,
 	CONSTRAINT objects_pkey PRIMARY KEY (id)
 );
 

@@ -220,7 +220,7 @@ func queryObjectIRIById(object_id int) (string, error) {
 }
 
 func queryObjectByIRI(iri string) (Object, error) {
-	sql := `SELECT type, iri, content, attributed_to
+	sql := `SELECT type, iri, content, attributed_to, in_reply_to
 	FROM objects WHERE iri = $1;`
 	object := generateNewObject()
 	err := db.QueryRow(context.Background(), sql, iri).Scan(
@@ -228,6 +228,7 @@ func queryObjectByIRI(iri string) (Object, error) {
 		&object.Id,
 		&object.Content,
 		&object.AttributedTo,
+		&object.InReplyTo,
 	)
 	if err != nil {
 		return object, err
@@ -297,6 +298,25 @@ func createInboxActivity(activityArb arb.Arb, object string, actor string, recip
 	return activityArb, nil
 }
 
+func addActivityTo(activityArb arb.Arb, recipient string) error {
+	ctx := context.Background()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	sql := `INSERT INTO activities_to (activity_id, iri) 
+	VALUES (
+		SELECT activity_id FROM activities WHERE iri = $1,
+		$2
+	) RETURNING id;`
+	_, err = tx.Exec(ctx, sql, activityArb["id"], recipient)
+	if err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+	return nil
+}
+
 // Create a new outbox Activity with full object details
 func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor string) (arb.Arb, error) {
 	ctx := context.Background()
@@ -304,13 +324,14 @@ func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor st
 	if err != nil {
 		return activityArb, err
 	}
-	sql := `INSERT INTO objects (type, content, attributed_to) 
-	VALUES ($1, $2, $3) RETURNING id;`
+	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to) 
+	VALUES ($1, $2, $3, $4) RETURNING id;`
 	var object_id int
 	err = tx.QueryRow(ctx, sql,
 		objectArb["type"],
 		objectArb["content"],
 		actor,
+		objectArb["inReplyTo"],
 	).Scan(&object_id)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -449,7 +470,7 @@ func queryActivity(ID int) (Activity, error) {
 }
 
 func queryObject(id int) (Object, error) {
-	sql := `SELECT type, iri, content, attributed_to
+	sql := `SELECT type, iri, content, attributed_to, in_reply_to
 	FROM objects WHERE id = $1;`
 	var object Object
 	err := db.QueryRow(context.Background(), sql, id).Scan(
@@ -457,6 +478,7 @@ func queryObject(id int) (Object, error) {
 		&object.Id,
 		&object.Content,
 		&object.AttributedTo,
+		&object.InReplyTo,
 	)
 	if err != nil {
 		return object, err

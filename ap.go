@@ -117,6 +117,28 @@ func getIRI(a arb.Arb) (*url.URL, error) {
 	return nil, errors.New("unable to get iri")
 }
 
+func find(iri string, headers http.Header) (arb.Arb, error) {
+	client := http.DefaultClient
+	req, err := http.NewRequest("GET", iri, nil)
+	if err != nil {
+		return nil, err
+	}
+	for k, l := range headers {
+		for _, v := range l {
+			req.Header.Add(k, v)
+		}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	arb, err := arb.Read(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return arb, nil
+}
+
 func findProp(a arb.Arb, prop string, headers http.Header) (arb.Arb, error) {
 	iri, err := a.GetURL(prop)
 	if err != nil {
@@ -259,27 +281,36 @@ func formatRecipients(a arb.Arb) error {
 }
 
 func (fed Federation) Federate() {
-	req, err := http.NewRequest("POST", fed.Inbox, bytes.NewBuffer(fed.Data))
+	actor, err := find(fed.Recipient, acceptHeaders)
 	if err != nil {
 		logChan <- err.Error()
+		return
 	}
-	// for k, l := range contentTypeHeaders {
-	// 	for _, v := range l {
-	// 		req.Header.Add(k, v)
-	// 	}
-	// }
+	inbox, err := actor.GetString("inbox")
+	if err != nil {
+		logChan <- err.Error()
+		return
+	}
+
+	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(fed.Data))
+	if err != nil {
+		logChan <- err.Error()
+		return
+	}
 	req.Header.Add("Content-Type", contentType)
 
 	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, fed.Name)
 	err = sigs.SignRequest(req, fed.Data, config.RSAPrivateKey, keyID)
 	if err != nil {
 		logChan <- err.Error()
+		return
 	}
 
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
 		logChan <- err.Error()
+		return
 	}
 	defer response.Body.Close()
 
@@ -288,6 +319,7 @@ func (fed Federation) Federate() {
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logChan <- err.Error()
+		return
 	}
 	logChan <- fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body))
 }
