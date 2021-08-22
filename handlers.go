@@ -148,7 +148,8 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 	// var responseArb arb.Arb
 	switch activityType {
 	case "Create":
-		_, err = createInboxActivity(activityArb, objectIRI, actorIRI, recipient)
+		// TODO: Save more of the object, if possible
+		_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -158,7 +159,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, errors.New("wrong inbox"))
 			return
 		}
-		_, err = createInboxActivity(activityArb, recipient, actorIRI, recipient)
+		_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return

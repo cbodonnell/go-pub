@@ -265,7 +265,47 @@ func queryToByActivityId(activity_id int) ([]string, error) {
 }
 
 // Create a new inbox Activity with basic details
-func createInboxActivity(activityArb arb.Arb, object string, actor string, recipient string) (arb.Arb, error) {
+func createInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, recipient string) (arb.Arb, error) {
+	ctx := context.Background()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return activityArb, err
+	}
+	sql := `INSERT INTO objects (iri, type, content, attributed_to, in_reply_to) 
+	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
+	var object_id int
+	err = tx.QueryRow(ctx, sql,
+		objectArb["id"],
+		objectArb["type"],
+		objectArb["content"],
+		objectArb["attributedTo"],
+		objectArb["inReplyTo"],
+	).Scan(&object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	sql = `INSERT INTO activities (type, actor, object_id, iri)
+	VALUES ($1, $2, $3, $4) RETURNING id;`
+	var activity_id int
+	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	sql = `INSERT INTO activities_to (activity_id, iri)
+	VALUES ($1, $2);`
+	_, err = tx.Exec(ctx, sql, activity_id, recipient)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	tx.Commit(ctx)
+	return activityArb, nil
+}
+
+// Create a new inbox Activity with basic details
+func createInboxReferenceActivity(activityArb arb.Arb, object string, actor string, recipient string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
