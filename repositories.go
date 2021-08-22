@@ -339,19 +339,13 @@ func createInboxReferenceActivity(activityArb arb.Arb, object string, actor stri
 }
 
 func addActivityTo(activityArb arb.Arb, recipient string) error {
-	ctx := context.Background()
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
 	sql := `INSERT INTO activities_to (activity_id, iri) 
 	VALUES (
-		SELECT activity_id FROM activities WHERE iri = $1,
+		(SELECT id FROM activities WHERE iri = $1 LIMIT 1),
 		$2
-	) RETURNING id;`
-	_, err = tx.Exec(ctx, sql, activityArb["id"], recipient)
+	);`
+	_, err := db.Exec(context.Background(), sql, activityArb["id"], recipient)
 	if err != nil {
-		tx.Rollback(ctx)
 		return err
 	}
 	return nil

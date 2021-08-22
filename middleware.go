@@ -88,7 +88,7 @@ func userMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, err := checkJWTClaims(r)
 		if err != nil {
-			unauthorizedRequest(w, err)
+			h.ServeHTTP(w, r)
 			return
 		}
 		err = checkUser(claims.Username)

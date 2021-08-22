@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -284,6 +285,9 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 						fedChan <- Federation{Name: name, Recipient: iri, Data: activityArb.ToBytes()}
 					}
 					err = addActivityTo(activityArb, iri)
+					if err != nil {
+						log.Println(err.Error())
+					}
 				}
 
 			}

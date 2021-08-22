@@ -42,18 +42,18 @@ func main() {
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
 	get.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
 	get.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
-	get.Use(acceptMiddleware)
+	get.Use(acceptMiddleware, userMiddleware)
 
 	post.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
-	post.Use(contentTypeMiddleware)
+	post.Use(contentTypeMiddleware, userMiddleware)
 
 	aGet := get.NewRoute().Subrouter()
 	aGet.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
-	aGet.Use(jwtMiddleware, userMiddleware)
+	aGet.Use(jwtMiddleware)
 
 	aPost := post.NewRoute().Subrouter()
 	aPost.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
-	aPost.Use(jwtMiddleware, userMiddleware)
+	aPost.Use(jwtMiddleware)
 
 	sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
 	sink.Use(acceptMiddleware)
