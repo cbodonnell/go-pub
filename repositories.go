@@ -352,7 +352,7 @@ func addActivityTo(activityArb arb.Arb, recipient string) error {
 }
 
 // Create a new outbox Activity with full object details
-func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor string) (arb.Arb, error) {
+func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -364,7 +364,7 @@ func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor st
 	err = tx.QueryRow(ctx, sql,
 		objectArb["type"],
 		objectArb["content"],
-		actor,
+		objectArb["attributedTo"],
 		objectArb["inReplyTo"],
 	).Scan(&object_id)
 	if err != nil {
@@ -383,7 +383,7 @@ func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb, actor st
 	sql = `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
 	var activity_id int
-	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id).Scan(&activity_id)
+	err = tx.QueryRow(ctx, sql, activityArb["type"], activityArb["actor"], object_id).Scan(&activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
 		return activityArb, err
@@ -421,7 +421,7 @@ func createRecipientsInsert(activity_id int, recipients []string) ([]string, []i
 }
 
 // Create a new outbox Activity with full details
-func createOutboxReferenceActivity(activityArb arb.Arb, actor string) (arb.Arb, error) {
+func createOutboxReferenceActivity(activityArb arb.Arb) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -441,7 +441,7 @@ func createOutboxReferenceActivity(activityArb arb.Arb, actor string) (arb.Arb, 
 	sql = `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
 	var activity_id int
-	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id).Scan(&activity_id)
+	err = tx.QueryRow(ctx, sql, activityArb["type"], activityArb["actor"], object_id).Scan(&activity_id)
 	if err != nil {
 		tx.Rollback(ctx)
 		return activityArb, err

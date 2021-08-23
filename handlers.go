@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -146,7 +145,6 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	// var responseArb arb.Arb
 	switch activityType {
 	case "Create":
 		// TODO: Save more of the object, if possible
@@ -171,7 +169,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		responseArb["actor"] = recipient
-		responseArb, err = createOutboxReferenceActivity(responseArb, recipient)
+		responseArb, err = createOutboxReferenceActivity(responseArb)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -182,9 +180,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// w.Header().Set("Content-Type", contentType)
 	accepted(w)
-	// activityArb.Write(w)
 }
 
 func getOutbox(w http.ResponseWriter, r *http.Request) {
@@ -232,6 +228,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		unauthorizedRequest(w, errors.New("not your outbox"))
 		return
 	}
+	actor := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, claims.Username)
 	err := checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
@@ -247,7 +244,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	actor := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, claims.Username)
+	activityArb["actor"] = actor
 	switch activityType {
 	case "Create":
 		objectArb, err := activityArb.GetArb("object")
@@ -255,13 +252,14 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, err)
 			return
 		}
-		activityArb, err = createOutboxActivityDetail(activityArb, objectArb, actor)
+		objectArb["attributedTo"] = actor
+		activityArb, err = createOutboxActivityDetail(activityArb, objectArb)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 	case "Like":
-		activityArb, err = createOutboxReferenceActivity(activityArb, actor)
+		activityArb, err = createOutboxReferenceActivity(activityArb)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -272,25 +270,19 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
-	// TODO: able to combine this with above?
-	activityArb["actor"] = actor
-
-	// TODO: create AP method to get as an array of URLs
-	recipients, err := activityArb.GetArray("to")
-	if err == nil {
-		for _, recipient := range recipients {
-			if iri, ok := recipient.(string); ok {
-				if iriURL, err := url.Parse(iri); err == nil {
-					if iriURL.Host != config.ServerName {
-						fedChan <- Federation{Name: name, Recipient: iri, Data: activityArb.ToBytes()}
-					}
-					err = addActivityTo(activityArb, iri)
-					if err != nil {
-						log.Println(err.Error())
-					}
-				}
-
-			}
+	// Get recipients
+	recipients, err := getRecipients(activityArb, "to")
+	if err != nil {
+		log.Println(err.Error())
+	}
+	// Deliver to recipients
+	for _, recipient := range recipients {
+		if recipient.Host != config.ServerName {
+			fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
+		}
+		err = addActivityTo(activityArb, recipient.String())
+		if err != nil {
+			log.Println(err.Error())
 		}
 	}
 

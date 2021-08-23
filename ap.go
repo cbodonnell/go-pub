@@ -280,6 +280,25 @@ func formatRecipients(a arb.Arb) error {
 	return nil
 }
 
+func getRecipients(a arb.Arb, prop string) ([]*url.URL, error) {
+	urls := make([]*url.URL, 0)
+	if !a.IsArray(prop) {
+		return urls, nil
+	}
+	recipients, err := a.GetArray(prop)
+	if err != nil {
+		return urls, err
+	}
+	for _, recipient := range recipients {
+		if iri, ok := recipient.(string); ok {
+			if iriURL, err := url.Parse(iri); err == nil {
+				urls = append(urls, iriURL)
+			}
+		}
+	}
+	return urls, nil
+}
+
 func (fed Federation) Federate() {
 	actor, err := find(fed.Recipient, acceptHeaders)
 	if err != nil {
