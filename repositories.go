@@ -206,6 +206,164 @@ func queryOutboxByUserName(name string) ([]Activity, error) {
 	return activities, nil
 }
 
+func queryFollowingTotalItemsByUserName(name string) (int, error) {
+	sql := `SELECT COUNT(*)
+	FROM activities
+	WHERE type = 'Follow'
+	AND actor = $1`
+
+	var count int
+	err := db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	).Scan(
+		&count,
+	)
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
+func queryFollowingByUserName(name string) ([]string, error) {
+	sql := `SELECT obj.iri
+	FROM activities AS act
+	JOIN objects AS obj ON obj.id = act.object_id
+	WHERE act.type = 'Follow'
+	AND act.actor = $1
+	ORDER BY act.id DESC`
+
+	rows, err := db.Query(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var actors []string
+	for rows.Next() {
+		var actor string
+		err = rows.Scan(
+			&actor,
+		)
+		if err != nil {
+			return actors, err
+		}
+		actors = append(actors, actor)
+	}
+	err = rows.Err()
+	if err != nil {
+		return actors, err
+	}
+	return actors, nil
+}
+
+func queryFollowersTotalItemsByUserName(name string) (int, error) {
+	sql := `SELECT COUNT(*)
+	FROM activities AS act
+	JOIN objects AS obj ON obj.id = act.object_id
+	WHERE act.type = 'Follow'
+	AND obj.iri = $1`
+
+	var count int
+	err := db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	).Scan(
+		&count,
+	)
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
+func queryFollowersByUserName(name string) ([]string, error) {
+	sql := `SELECT act.actor
+	FROM activities AS act
+	JOIN objects AS obj ON obj.id = act.object_id
+	WHERE act.type = 'Follow'
+	AND obj.iri = $1
+	ORDER BY act.id DESC`
+
+	rows, err := db.Query(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var actors []string
+	for rows.Next() {
+		var actor string
+		err = rows.Scan(
+			&actor,
+		)
+		if err != nil {
+			return actors, err
+		}
+		actors = append(actors, actor)
+	}
+	err = rows.Err()
+	if err != nil {
+		return actors, err
+	}
+	return actors, nil
+}
+
+func queryLikedTotalItemsByUserName(name string) (int, error) {
+	sql := `SELECT COUNT(*)
+	FROM activities
+	WHERE type = 'Like'
+	AND actor = $1`
+
+	var count int
+	err := db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	).Scan(
+		&count,
+	)
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
+func queryLikedByUserName(name string) ([]Object, error) {
+	sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
+	FROM objects AS obj
+	JOIN activities AS act ON act.object_id = obj.id
+	WHERE act.type = 'Like'
+	AND act.actor = $1
+	ORDER BY act.id DESC`
+
+	rows, err := db.Query(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var objects []Object
+	for rows.Next() {
+		object := generateNewObject()
+		err = rows.Scan(
+			&object.Type,
+			&object.Id,
+			&object.Content,
+			&object.AttributedTo,
+			&object.InReplyTo,
+		)
+		if err != nil {
+			return objects, err
+		}
+		objects = append(objects, object)
+	}
+	err = rows.Err()
+	if err != nil {
+		return objects, err
+	}
+	return objects, nil
+}
+
 func queryObjectIRIById(object_id int) (string, error) {
 	sql := `SELECT iri
 	FROM objects WHERE id = $1;`

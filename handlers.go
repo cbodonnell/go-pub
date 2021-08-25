@@ -302,7 +302,7 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		totalItems, err := queryFollowingTotalItemsByUserName(user.Name)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -314,14 +314,11 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // TODO: Implement a method to get the following collection
-	// activities, err := queryOutboxByUserName(user.Name)
-	// if err != nil {
-	// 	internalServerError(w, err)
-	// 	return
-	// }
-
-	following := make([]interface{}, 0)
+	following, err := queryFollowingByUserName(user.Name)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 
 	orderedItems := make([]interface{}, len(following))
 	for i, actor := range following {
@@ -343,7 +340,7 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		totalItems, err := queryFollowersTotalItemsByUserName(user.Name)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -355,14 +352,11 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // TODO: Implement a method to get the followers collection
-	// activities, err := queryOutboxByUserName(user.Name)
-	// if err != nil {
-	// 	internalServerError(w, err)
-	// 	return
-	// }
-
-	followers := make([]interface{}, 0)
+	followers, err := queryFollowersByUserName(user.Name)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 
 	orderedItems := make([]interface{}, len(followers))
 	for i, actor := range followers {
@@ -384,7 +378,7 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 
 	page := r.FormValue("page")
 	if page != "true" {
-		totalItems, err := queryOutboxTotalItemsByUserName(user.Name)
+		totalItems, err := queryLikedTotalItemsByUserName(user.Name)
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -396,14 +390,11 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // TODO: Implement a method to get the liked collection
-	// activities, err := queryOutboxByUserName(user.Name)
-	// if err != nil {
-	// 	internalServerError(w, err)
-	// 	return
-	// }
-
-	liked := make([]interface{}, 0)
+	liked, err := queryLikedByUserName(user.Name)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 
 	orderedItems := make([]interface{}, len(liked))
 	for i, activity := range liked {

@@ -300,17 +300,48 @@ func getRecipients(a arb.Arb, prop string) ([]*url.URL, error) {
 }
 
 func (fed Federation) Federate() {
-	actor, err := find(fed.Recipient, acceptHeaders)
-	if err != nil {
-		logChan <- err.Error()
-		return
-	}
-	inbox, err := actor.GetString("inbox")
+	logChan <- fmt.Sprintf("Federating to %s", fed.Recipient)
+	recipient, err := find(fed.Recipient, acceptHeaders)
 	if err != nil {
 		logChan <- err.Error()
 		return
 	}
 
+	recipientType, err := getType(recipient)
+	if err != nil {
+		logChan <- err.Error()
+		return
+	}
+
+	switch recipientType {
+	case "Person":
+		inbox, err := recipient.GetString("inbox")
+		if err != nil {
+			logChan <- err.Error()
+			return
+		}
+		fed.Post(inbox)
+	case "Collection":
+	case "CollectionPage":
+	case "OrderedCollection":
+	case "OrderedCollectionPage":
+		// var orderedItems []string
+		// check if 'orderedItems'
+		// find 'first'
+		// if first get 'orderedItems'
+		// find 'next' while able to
+		// for each get 'orderedItems'
+
+		// for _, recipient in orderedItems:
+		// set fed.Recipient and Federate!
+		return
+	default:
+		logChan <- fmt.Sprintf("invalid recipient type: %s", recipientType)
+		return
+	}
+}
+
+func (fed Federation) Post(inbox string) {
 	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(fed.Data))
 	if err != nil {
 		logChan <- err.Error()
