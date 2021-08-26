@@ -325,6 +325,7 @@ func (fed Federation) Federate() {
 	case "CollectionPage":
 	case "OrderedCollection":
 	case "OrderedCollectionPage":
+		logChan <- fmt.Sprintf("%s is a collection", fed.Recipient)
 		var items []string
 		orderedItems, err := recipient.GetArray("orderedItems")
 		if err != nil {
@@ -343,6 +344,7 @@ func (fed Federation) Federate() {
 			fed.Federate()
 			return
 		}
+		logChan <- fmt.Sprintf("retrieved orderedItems from %s", fed.Recipient)
 		for _, item := range orderedItems {
 			if iri, ok := item.(string); ok {
 				if iriURL, err := url.Parse(iri); err == nil {
