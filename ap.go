@@ -336,11 +336,11 @@ func (fed Federation) Federate() {
 					logChan <- fmt.Sprintf("unable to federate to: %s", fed.Recipient)
 				}
 				fed.Recipient = next
-				fedChan <- fed
+				fed.Federate()
 				return
 			}
 			fed.Recipient = first
-			fedChan <- fed
+			fed.Federate()
 			return
 		}
 		for _, item := range orderedItems {
@@ -352,7 +352,7 @@ func (fed Federation) Federate() {
 		}
 		for _, item := range items {
 			fed.Recipient = item
-			fedChan <- fed
+			fed.Federate()
 		}
 		// check if 'orderedItems'
 		// find 'first'
