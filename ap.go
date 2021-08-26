@@ -312,6 +312,7 @@ func (fed Federation) Federate() {
 		logChan <- err.Error()
 		return
 	}
+	logChan <- fmt.Sprintf("%s is of type %s", fed.Recipient, recipientType)
 
 	switch recipientType {
 	case "Person":
