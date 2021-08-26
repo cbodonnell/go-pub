@@ -322,10 +322,7 @@ func (fed Federation) Federate() {
 			return
 		}
 		fed.Post(inbox)
-	case "Collection":
-	case "CollectionPage":
-	case "OrderedCollection":
-	case "OrderedCollectionPage":
+	case "Collection", "CollectionPage", "OrderedCollection", "OrderedCollectionPage":
 		logChan <- fmt.Sprintf("%s is a collection", fed.Recipient)
 		var items []string
 		orderedItems, err := recipient.GetArray("orderedItems")
