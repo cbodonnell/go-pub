@@ -325,7 +325,35 @@ func (fed Federation) Federate() {
 	case "CollectionPage":
 	case "OrderedCollection":
 	case "OrderedCollectionPage":
-		// var orderedItems []string
+		var items []string
+		orderedItems, err := recipient.GetArray("orderedItems")
+		if err != nil {
+			// no ordered items, get first or next
+			first, err := recipient.GetString("first")
+			if err != nil {
+				next, err := recipient.GetString("next")
+				if err != nil {
+					logChan <- fmt.Sprintf("unable to federate to: %s", fed.Recipient)
+				}
+				fed.Recipient = next
+				fedChan <- fed
+				return
+			}
+			fed.Recipient = first
+			fedChan <- fed
+			return
+		}
+		for _, item := range orderedItems {
+			if iri, ok := item.(string); ok {
+				if iriURL, err := url.Parse(iri); err == nil {
+					items = append(items, iriURL.String())
+				}
+			}
+		}
+		for _, item := range items {
+			fed.Recipient = item
+			fedChan <- fed
+		}
 		// check if 'orderedItems'
 		// find 'first'
 		// if first get 'orderedItems'
