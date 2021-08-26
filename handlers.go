@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -277,7 +278,11 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	// Deliver to recipients
 	for _, recipient := range recipients {
+		// TODO: Handle individual user vs. followers/following collections
 		if recipient.Host != config.ServerName {
+			fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
+		}
+		if strings.HasSuffix(recipient.String(), "/followers") {
 			fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
 		}
 		err = addActivityTo(activityArb, recipient.String())
