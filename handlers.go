@@ -146,6 +146,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activityExists := activityExists(activityIRI)
+	// TODO: Check if activity_to exists here too and add, if needed
 	switch activityType {
 	case "Create":
 		// TODO: Save more of the object, if possible
