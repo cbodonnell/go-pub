@@ -19,7 +19,7 @@ func main() {
 	if ENV == "" {
 		ENV = "dev"
 	}
-	fmt.Println(fmt.Sprintf("Running in ENV: %s", ENV))
+	log.Println(fmt.Sprintf("Running in ENV: %s", ENV))
 	config = getConfig(ENV)
 
 	db = connectDb(config.Db)
@@ -69,7 +69,7 @@ func main() {
 
 	// Run server
 	port := config.Port
-	fmt.Println(fmt.Sprintf("Serving on port %d", port))
+	log.Println(fmt.Sprintf("Serving on port %d", port))
 
 	// CORS in dev
 	if ENV == "dev" {

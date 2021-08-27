@@ -145,29 +145,22 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	activityExists := activityExists(activityIRI)
-	// TODO: Check if activity_to exists here too and add, if needed
 	switch activityType {
 	case "Create":
-		// TODO: Save more of the object, if possible
-		if !activityExists {
-			_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
-			if err != nil {
-				internalServerError(w, err)
-				return
-			}
+		_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
 		}
 	case "Follow":
 		if objectIRI != recipient {
 			badRequest(w, errors.New("wrong inbox"))
 			return
 		}
-		if !activityExists {
-			_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
-			if err != nil {
-				internalServerError(w, err)
-				return
-			}
+		_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
 		}
 		responseArb, err := newActivityArbReference(activityIRI, "Accept")
 		if err != nil {
