@@ -179,7 +179,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		err = addActivityTo(responseArb, recipient)
+		err = addActivityTo(responseArb, actorIRI)
 		if err != nil {
 			log.Println(err.Error())
 		}
