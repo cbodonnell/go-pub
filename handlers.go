@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -146,23 +145,28 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
+	activityExists := activityExists(activityIRI)
 	switch activityType {
 	case "Create":
 		// TODO: Save more of the object, if possible
-		_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
-		if err != nil {
-			internalServerError(w, err)
-			return
+		if !activityExists {
+			_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
 		}
 	case "Follow":
 		if objectIRI != recipient {
 			badRequest(w, errors.New("wrong inbox"))
 			return
 		}
-		_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
-		if err != nil {
-			internalServerError(w, err)
-			return
+		if !activityExists {
+			_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
 		}
 		responseArb, err := newActivityArbReference(activityIRI, "Accept")
 		if err != nil {
@@ -174,6 +178,10 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			internalServerError(w, err)
 			return
+		}
+		err = addActivityTo(responseArb, recipient)
+		if err != nil {
+			log.Println(err.Error())
 		}
 		fedChan <- Federation{Name: name, Recipient: actorIRI, Data: responseArb.ToBytes()}
 	default:
@@ -259,7 +267,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-	case "Like":
+	case "Like", "Follow":
 		activityArb, err = createOutboxReferenceActivity(activityArb)
 		if err != nil {
 			internalServerError(w, err)
@@ -278,17 +286,11 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	// Deliver to recipients
 	for _, recipient := range recipients {
-		// TODO: Handle individual user vs. followers/following collections
-		if recipient.Host != config.ServerName {
-			fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
-		}
-		if strings.HasSuffix(recipient.String(), "/followers") {
-			fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
-		}
 		err = addActivityTo(activityArb, recipient.String())
 		if err != nil {
 			log.Println(err.Error())
 		}
+		fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
 	}
 
 	w.Header().Set("Content-Type", contentType)

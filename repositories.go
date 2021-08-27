@@ -661,6 +661,19 @@ func queryActivity(ID int) (Activity, error) {
 	return activity, nil
 }
 
+func activityExists(iri string) bool {
+	sql := `SELECT 1 from activities
+	WHERE iri = $1`
+
+	var result int
+	_ = db.QueryRow(context.Background(), sql, iri).Scan(&result)
+	if result != 1 {
+		return false
+	}
+	fmt.Println(fmt.Sprintf("%s exists", iri))
+	return true
+}
+
 func queryObject(id int) (Object, error) {
 	sql := `SELECT type, iri, content, attributed_to, in_reply_to
 	FROM objects WHERE id = $1;`

@@ -384,6 +384,8 @@ func (fed Federation) Post(inbox string) {
 		return
 	}
 
+	logChan <- fmt.Sprintf("POST to %s", req.URL.Hostname()+req.URL.RequestURI())
+	// Is it possible not to wait for this and have it also done concurrently?
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
@@ -392,7 +394,6 @@ func (fed Federation) Post(inbox string) {
 	}
 	defer response.Body.Close()
 
-	logChan <- fmt.Sprintf("POST to %s", req.URL.Hostname()+req.URL.RequestURI())
 	logChan <- fmt.Sprintf("%s code: %s", req.URL.Hostname()+req.URL.RequestURI(), response.Status)
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
