@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 func created(w http.ResponseWriter, iri string) {
 	w.Header().Add("Location", iri)
@@ -12,6 +15,7 @@ func accepted(w http.ResponseWriter) {
 }
 
 func badRequest(w http.ResponseWriter, err error) {
+	log.Println(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -22,6 +26,7 @@ func badRequest(w http.ResponseWriter, err error) {
 }
 
 func notFound(w http.ResponseWriter, err error) {
+	log.Println(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -32,6 +37,7 @@ func notFound(w http.ResponseWriter, err error) {
 }
 
 func unauthorizedRequest(w http.ResponseWriter, err error) {
+	log.Println(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -42,6 +48,7 @@ func unauthorizedRequest(w http.ResponseWriter, err error) {
 }
 
 func internalServerError(w http.ResponseWriter, err error) {
+	log.Println(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()

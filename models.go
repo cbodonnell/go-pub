@@ -1,9 +1,12 @@
 package main
 
+import "github.com/cheebz/arb"
+
 // Configuration struct
 type Configuration struct {
 	Debug         bool       `json:"debug"`
 	Port          int        `json:"port"`
+	LogFile       string     `json:"logFile"`
 	Protocol      string     `json:"protocol"`
 	ServerName    string     `json:"serverName"`
 	Auth          string     `json:"auth"`
@@ -194,5 +197,5 @@ type Activity struct {
 type Federation struct {
 	Name      string
 	Recipient string
-	Data      []byte
+	Activity  arb.Arb
 }

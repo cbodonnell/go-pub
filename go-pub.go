@@ -80,6 +80,11 @@ func main() {
 		r.Use(cors.Handler)
 	}
 
+	if config.LogFile != "" {
+		logFile := setLogFile(config.LogFile)
+		defer logFile.Close()
+	}
+
 	// TLS
 	if config.SSLCert == "" {
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))

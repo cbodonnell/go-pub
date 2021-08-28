@@ -115,7 +115,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	activityIRI, err := activityArb.GetString("id")
+	activityIRI, err := getIRI(activityArb)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -125,7 +125,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	actorIRI, err := actorArb.GetString("id")
+	actorIRI, err := getIRI(actorArb)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -135,34 +135,34 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	objectIRI, err := objectArb.GetString("id")
+	objectIRI, err := getIRI(objectArb)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	activityType, err := activityArb.GetString("type")
+	activityType, err := getType(activityArb)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
 	switch activityType {
 	case "Create":
-		_, err = createInboxActivity(activityArb, objectArb, actorIRI, recipient)
+		_, err = createInboxActivity(activityArb, objectArb, actorIRI.String(), recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 	case "Follow":
-		if objectIRI != recipient {
+		if objectIRI.String() != recipient {
 			badRequest(w, errors.New("wrong inbox"))
 			return
 		}
-		_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI, recipient)
+		_, err = createInboxReferenceActivity(activityArb, recipient, actorIRI.String(), recipient)
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
-		responseArb, err := newActivityArbReference(activityIRI, "Accept")
+		responseArb, err := newActivityArbReference(activityIRI.String(), "Accept")
 		if err != nil {
 			internalServerError(w, err)
 			return
@@ -173,11 +173,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-		err = addActivityTo(responseArb, actorIRI)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		fedChan <- Federation{Name: name, Recipient: actorIRI, Data: responseArb.ToBytes()}
+		fedChan <- Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
@@ -242,7 +238,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	activityType, err := activityArb.GetString("type")
+	activityType, err := getType(activityArb)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -261,11 +257,43 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, err)
 			return
 		}
-	case "Like", "Follow":
+	case "Like":
 		activityArb, err = createOutboxReferenceActivity(activityArb)
 		if err != nil {
 			internalServerError(w, err)
 			return
+		}
+	case "Follow":
+		activityArb, err = createOutboxReferenceActivity(activityArb)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+		objectIRI, err := activityArb.GetURL("object")
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+		// check if the recipient is internal
+		if objectIRI.Host == config.ServerName {
+			// if so, generate and federate an accept
+			activityIRI, err := getIRI(activityArb)
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
+			responseArb, err := newActivityArbReference(activityIRI.String(), "Accept")
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
+			responseArb["actor"] = objectIRI.String()
+			responseArb, err = createOutboxReferenceActivity(responseArb)
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
+			fedChan <- Federation{Name: name, Recipient: actor, Activity: responseArb}
 		}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
@@ -273,18 +301,24 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		// Activity type is something else, save object reference (if new), Activity, and Activity_to
 	}
 
+	// activityIRI, err := getIRI(activityArb)
+	// if err != nil {
+	// 	internalServerError(w, err)
+	// 	return
+	// }
+
 	// Get recipients
 	recipients, err := getRecipients(activityArb, "to")
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(err)
 	}
 	// Deliver to recipients
 	for _, recipient := range recipients {
-		err = addActivityTo(activityArb, recipient.String())
-		if err != nil {
-			log.Println(err.Error())
-		}
-		fedChan <- Federation{Name: name, Recipient: recipient.String(), Data: activityArb.ToBytes()}
+		// err = addActivityTo(activityIRI.String(), recipient.String())
+		// if err != nil {
+		// 	log.Println(err.Error())
+		// }
+		fedChan <- Federation{Name: name, Recipient: recipient.String(), Activity: activityArb}
 	}
 
 	w.Header().Set("Content-Type", contentType)

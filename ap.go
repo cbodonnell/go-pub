@@ -194,7 +194,7 @@ func parsePayload(r *http.Request) (arb.Arb, error) {
 	if err != nil {
 		return nil, err
 	}
-	payloadType, err := payloadArb.GetString("type")
+	payloadType, err := getType(payloadArb)
 	if err != nil {
 		return nil, err
 	}
@@ -301,30 +301,49 @@ func getRecipients(a arb.Arb, prop string) ([]*url.URL, error) {
 }
 
 func (fed Federation) Federate() {
-	logChan <- fmt.Sprintf("Federating to %s", fed.Recipient)
+	log.Println(fmt.Sprintf("Federating to %s", fed.Recipient))
 	recipient, err := find(fed.Recipient, acceptHeaders)
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
-
 	recipientType, err := getType(recipient)
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
-	logChan <- fmt.Sprintf("%s is of type %s", fed.Recipient, recipientType)
+	log.Println(fmt.Sprintf("%s is of type %s", fed.Recipient, recipientType))
 
 	switch recipientType {
 	case "Person":
-		inbox, err := recipient.GetString("inbox")
+		activityIRI, err := getIRI(fed.Activity)
 		if err != nil {
-			logChan <- err.Error()
+			log.Println(err)
 			return
 		}
-		fed.Post(inbox)
+		recipientIRI, err := getIRI(recipient)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		err = addActivityTo(activityIRI.String(), recipientIRI.String())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if recipientIRI.Host != config.ServerName {
+			inbox, err := recipient.GetString("inbox")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fed.Post(inbox)
+			return
+		}
+		log.Println(fmt.Sprintf("%s is a local user", fed.Recipient))
+		return
 	case "Collection", "CollectionPage", "OrderedCollection", "OrderedCollectionPage":
-		logChan <- fmt.Sprintf("%s is a collection", fed.Recipient)
+		log.Println(fmt.Sprintf("%s is a collection", fed.Recipient))
 		var items []string
 		orderedItems, err := recipient.GetArray("orderedItems")
 		if err != nil {
@@ -333,7 +352,7 @@ func (fed Federation) Federate() {
 			if err != nil {
 				next, err := recipient.GetString("next")
 				if err != nil {
-					logChan <- fmt.Sprintf("unable to federate to: %s", fed.Recipient)
+					log.Println(fmt.Sprintf("unable to federate to: %s", fed.Recipient))
 				}
 				fed.Recipient = next
 				fed.Federate()
@@ -343,7 +362,7 @@ func (fed Federation) Federate() {
 			fed.Federate()
 			return
 		}
-		logChan <- fmt.Sprintf("retrieved orderedItems from %s", fed.Recipient)
+		log.Println(fmt.Sprintf("retrieved orderedItems from %s", fed.Recipient))
 		for _, item := range orderedItems {
 			if iri, ok := item.(string); ok {
 				if iriURL, err := url.Parse(iri); err == nil {
@@ -355,51 +374,43 @@ func (fed Federation) Federate() {
 			fed.Recipient = item
 			fed.Federate()
 		}
-		// check if 'orderedItems'
-		// find 'first'
-		// if first get 'orderedItems'
-		// find 'next' while able to
-		// for each get 'orderedItems'
-
-		// for _, recipient in orderedItems:
-		// set fed.Recipient and Federate!
 		return
 	default:
-		logChan <- fmt.Sprintf("invalid recipient type: %s", recipientType)
+		log.Println(fmt.Sprintf("invalid recipient type: %s", recipientType))
 		return
 	}
 }
 
 func (fed Federation) Post(inbox string) {
-	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(fed.Data))
+	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(fed.Activity.ToBytes()))
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
 	req.Header.Add("Content-Type", contentType)
 
 	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, fed.Name)
-	err = sigs.SignRequest(req, fed.Data, config.RSAPrivateKey, keyID)
+	err = sigs.SignRequest(req, fed.Activity.ToBytes(), config.RSAPrivateKey, keyID)
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
 
-	logChan <- fmt.Sprintf("POST to %s", req.URL.Hostname()+req.URL.RequestURI())
+	log.Println(fmt.Sprintf("POST to %s", req.URL.Hostname()+req.URL.RequestURI()))
 	// Is it possible not to wait for this and have it also done concurrently?
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
 	defer response.Body.Close()
 
-	logChan <- fmt.Sprintf("%s code: %s", req.URL.Hostname()+req.URL.RequestURI(), response.Status)
+	log.Println(fmt.Sprintf("%s code: %s", req.URL.Hostname()+req.URL.RequestURI(), response.Status))
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		logChan <- err.Error()
+		log.Println(err)
 		return
 	}
-	logChan <- fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body))
+	log.Println(fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body)))
 }
