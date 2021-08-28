@@ -77,9 +77,9 @@ func queryInboxTotalItemsByUserName(name string) (int, error) {
 	WHERE act_to.iri = $1`
 
 	var count int
-	err := db.QueryRow(context.Background(), sql, name).Scan(
-		&count,
-	)
+	err := db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+	).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -146,9 +146,7 @@ func queryOutboxTotalItemsByUserName(name string) (int, error) {
 	var count int
 	err := db.QueryRow(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
-	).Scan(
-		&count,
-	)
+	).Scan(&count)
 	if err != nil {
 		return count, err
 	}
