@@ -209,6 +209,11 @@ func queryFollowingTotalItemsByUserName(name string) (int, error) {
 	sql := `SELECT COUNT(*)
 	FROM activities
 	WHERE type = 'Follow'
+	AND iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND actor = $1`
 
 	var count int
@@ -228,6 +233,11 @@ func queryFollowingByUserName(name string) ([]string, error) {
 	FROM activities AS act
 	JOIN objects AS obj ON obj.id = act.object_id
 	WHERE act.type = 'Follow'
+	AND act.iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND act.actor = $1
 	ORDER BY act.id DESC`
 
@@ -261,6 +271,11 @@ func queryFollowersTotalItemsByUserName(name string) (int, error) {
 	FROM activities AS act
 	JOIN objects AS obj ON obj.id = act.object_id
 	WHERE act.type = 'Follow'
+	AND act.iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND obj.iri = $1`
 
 	var count int
@@ -280,6 +295,11 @@ func queryFollowersByUserName(name string) ([]string, error) {
 	FROM activities AS act
 	JOIN objects AS obj ON obj.id = act.object_id
 	WHERE act.type = 'Follow'
+	AND act.iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND obj.iri = $1
 	ORDER BY act.id DESC`
 
@@ -312,6 +332,11 @@ func queryLikedTotalItemsByUserName(name string) (int, error) {
 	sql := `SELECT COUNT(*)
 	FROM activities
 	WHERE type = 'Like'
+	AND iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND actor = $1`
 
 	var count int
@@ -331,6 +356,11 @@ func queryLikedByUserName(name string) ([]Object, error) {
 	FROM objects AS obj
 	JOIN activities AS act ON act.object_id = obj.id
 	WHERE act.type = 'Like'
+	AND act.iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
 	AND act.actor = $1
 	ORDER BY act.id DESC`
 

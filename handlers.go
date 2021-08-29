@@ -174,6 +174,12 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fedChan <- Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
+	case "Undo":
+		_, err = createInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), recipient)
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
 		return
@@ -294,6 +300,12 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			fedChan <- Federation{Name: name, Recipient: actor, Activity: responseArb}
+		}
+	case "Undo":
+		activityArb, err = createOutboxReferenceActivity(activityArb)
+		if err != nil {
+			internalServerError(w, err)
+			return
 		}
 	default:
 		badRequest(w, errors.New("unsupported activity type"))
