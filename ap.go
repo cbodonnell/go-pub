@@ -421,6 +421,7 @@ func fetchPublicString(keyId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	req.Header.Add("Accept", accept)
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
