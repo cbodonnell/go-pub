@@ -414,3 +414,28 @@ func (fed Federation) Post(inbox string) {
 	}
 	log.Println(fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body)))
 }
+
+func fetchPublicString(keyId string) (string, error) {
+	client := http.DefaultClient
+	req, err := http.NewRequest("GET", keyId, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	key, err := arb.Read(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	publicKey, err := key.GetArb("publicKey")
+	if err != nil {
+		return "", err
+	}
+	publicKeyString, err := publicKey.GetString("publicKeyPem")
+	if err != nil {
+		return "", err
+	}
+	return publicKeyString, nil
+}

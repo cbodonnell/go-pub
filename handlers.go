@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/cheebz/sigs"
 	"github.com/gorilla/mux"
 )
 
@@ -110,6 +112,16 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// TODO: Check signature here...
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	_, err = sigs.VerifyRequest(r, body, fetchPublicString)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
 	activityArb, err := parsePayload(r)
 	if err != nil {
 		badRequest(w, err)
