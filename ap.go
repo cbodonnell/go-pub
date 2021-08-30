@@ -185,8 +185,8 @@ func checkContext(payload arb.Arb) error {
 	return errors.New("\"https://www.w3.org/ns/activitystreams\" not in context")
 }
 
-func parsePayload(r *http.Request) (arb.Arb, error) {
-	payloadArb, err := arb.Read(r.Body)
+func parsePayload(payload []byte) (arb.Arb, error) {
+	payloadArb, err := arb.ReadBytes(payload)
 	if err != nil {
 		return nil, err
 	}

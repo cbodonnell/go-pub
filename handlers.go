@@ -111,18 +111,18 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	// TODO: Check signature here...
-	body, err := ioutil.ReadAll(r.Body)
+	// TODO: Make this safer (< x bytes...)
+	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	_, err = sigs.VerifyRequest(r, body, fetchPublicString)
+	_, err = sigs.VerifyRequest(r, payload, fetchPublicString)
 	if err != nil {
 		badRequest(w, err)
 		return
 	}
-	activityArb, err := parsePayload(r)
+	activityArb, err := parsePayload(payload)
 	if err != nil {
 		badRequest(w, err)
 		return
@@ -251,7 +251,12 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	activityArb, err := parsePayload(r)
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		badRequest(w, err)
+		return
+	}
+	activityArb, err := parsePayload(payload)
 	if err != nil {
 		badRequest(w, err)
 		return

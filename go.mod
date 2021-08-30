@@ -3,7 +3,7 @@ module github.com/cheebz/go-pub
 go 1.16
 
 require (
-	github.com/cheebz/arb v0.1.4
+	github.com/cheebz/arb v0.1.6
 	github.com/cheebz/sigs v0.3.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/mux v1.8.0
