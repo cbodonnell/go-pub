@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -111,12 +112,10 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	// TODO: Make this safer (< x bytes...)
-	payload, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
+	var buf bytes.Buffer
+	limiter := io.LimitReader(r.Body, 1*1024*1024)
+	io.Copy(&buf, limiter)
+	payload := buf.Bytes()
 	_, err = sigs.VerifyRequest(r, payload, fetchPublicString)
 	if err != nil {
 		badRequest(w, err)
@@ -251,11 +250,10 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	payload, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		badRequest(w, err)
-		return
-	}
+	var buf bytes.Buffer
+	limiter := io.LimitReader(r.Body, 1*1024*1024)
+	io.Copy(&buf, limiter)
+	payload := buf.Bytes()
 	activityArb, err := parsePayload(payload)
 	if err != nil {
 		badRequest(w, err)
