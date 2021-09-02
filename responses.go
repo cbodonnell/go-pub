@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -15,7 +14,7 @@ func accepted(w http.ResponseWriter) {
 }
 
 func badRequest(w http.ResponseWriter, err error) {
-	log.Println(err)
+	logCaller(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -26,7 +25,7 @@ func badRequest(w http.ResponseWriter, err error) {
 }
 
 func notFound(w http.ResponseWriter, err error) {
-	log.Println(err)
+	logCaller(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -37,7 +36,7 @@ func notFound(w http.ResponseWriter, err error) {
 }
 
 func unauthorizedRequest(w http.ResponseWriter, err error) {
-	log.Println(err)
+	logCaller(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()
@@ -48,7 +47,7 @@ func unauthorizedRequest(w http.ResponseWriter, err error) {
 }
 
 func internalServerError(w http.ResponseWriter, err error) {
-	log.Println(err)
+	logCaller(err)
 	var msg string
 	if config.Debug {
 		msg = err.Error()

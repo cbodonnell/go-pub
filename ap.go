@@ -415,7 +415,7 @@ func (fed Federation) Post(inbox string) {
 	log.Println(fmt.Sprintf("%s body: %s", req.URL.Hostname()+req.URL.RequestURI(), string(body)))
 }
 
-func fetchPublicString(keyId string) (string, error) {
+func fetchPublicKeyString(keyId string) (string, error) {
 	client := http.DefaultClient
 	req, err := http.NewRequest("GET", keyId, nil)
 	if err != nil {

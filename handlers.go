@@ -116,7 +116,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 	limiter := io.LimitReader(r.Body, 1*1024*1024)
 	io.Copy(&buf, limiter)
 	payload := buf.Bytes()
-	_, err = sigs.VerifyRequest(r, payload, fetchPublicString)
+	_, err = sigs.VerifyRequest(r, payload, fetchPublicKeyString)
 	if err != nil {
 		badRequest(w, err)
 		return

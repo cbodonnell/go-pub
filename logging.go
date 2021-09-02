@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 )
 
 func setLogFile(file string) *os.File {
@@ -15,4 +17,10 @@ func setLogFile(file string) *os.File {
 	log.SetOutput(logFile)
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	return logFile
+}
+
+func logCaller(err error) {
+	_, path, line, _ := runtime.Caller(2)
+	file := filepath.Base(path)
+	log.Printf("%s:%d: %v", file, line, err)
 }
