@@ -185,7 +185,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fedChan <- Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
-	case "Undo":
+	case "Undo", "Accept":
 		_, err = createInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), recipient)
 		if err != nil {
 			internalServerError(w, err)
