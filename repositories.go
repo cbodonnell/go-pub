@@ -449,44 +449,47 @@ func queryToByActivityId(activity_id int) ([]string, error) {
 
 // Create a new inbox Activity with basic details
 func createInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, recipient string) (arb.Arb, error) {
-	// activityIRI, _ := activityArb.GetString("id")
 	ctx := context.Background()
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return activityArb, err
 	}
-	// if !activityExists(activityIRI) {
-	sql := `INSERT INTO objects (iri, type, content, attributed_to, in_reply_to) 
-	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
-	var object_id int
-	err = tx.QueryRow(ctx, sql,
-		objectArb["id"],
-		objectArb["type"],
-		objectArb["content"],
-		objectArb["attributedTo"],
-		objectArb["inReplyTo"],
-	).Scan(&object_id)
+	objectIRI, _ := objectArb.GetString("id")
+	object_id, err := queryObjectID(objectIRI)
 	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+		sql := `INSERT INTO objects (iri, type, content, attributed_to, in_reply_to) 
+		VALUES ($1, $2, $3, $4, $5) RETURNING id;`
+		err = tx.QueryRow(ctx, sql,
+			objectArb["id"],
+			objectArb["type"],
+			objectArb["content"],
+			objectArb["attributedTo"],
+			objectArb["inReplyTo"],
+		).Scan(&object_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	sql = `INSERT INTO activities (type, actor, object_id, iri)
-	VALUES ($1, $2, $3, $4) RETURNING id;`
-	var activity_id int
-	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
+	activityIRI, _ := activityArb.GetString("id")
+	activity_id, err := queryActivityID(activityIRI)
 	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+		sql := `INSERT INTO activities (type, actor, object_id, iri)
+		VALUES ($1, $2, $3, $4) RETURNING id;`
+		err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	// }
-	// if !activityToExists(activityIRI, recipient) {
-	sql = `INSERT INTO activities_to (activity_id, iri) VALUES ($1,$2);`
-	_, err = tx.Exec(ctx, sql, activity_id, recipient)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+	if !activityToExists(activityIRI, recipient) {
+		sql := `INSERT INTO activities_to (activity_id, iri) VALUES ($1, $2);`
+		_, err = tx.Exec(ctx, sql, activity_id, recipient)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	// }
 	tx.Commit(ctx)
 	return activityArb, nil
 }
@@ -499,32 +502,36 @@ func createInboxReferenceActivity(activityArb arb.Arb, object string, actor stri
 	if err != nil {
 		return activityArb, err
 	}
-	// if !activityExists(activityIRI) {
-	sql := `INSERT INTO objects (iri) 
-	VALUES ($1) RETURNING id;`
-	var object_id int
-	err = tx.QueryRow(ctx, sql, object).Scan(&object_id)
+	object_id, err := queryObjectID(object)
 	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+		sql := `INSERT INTO objects (iri) 
+		VALUES ($1) RETURNING id;`
+		err = tx.QueryRow(ctx, sql, object).Scan(&object_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	sql = `INSERT INTO activities (type, actor, object_id, iri)
-	VALUES ($1, $2, $3, $4) RETURNING id;`
-	var activity_id int
-	err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
+	activityIRI, _ := activityArb.GetString("id")
+	activity_id, err := queryActivityID(activityIRI)
 	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+		sql := `INSERT INTO activities (type, actor, object_id, iri)
+		VALUES ($1, $2, $3, $4) RETURNING id;`
+		var activity_id int
+		err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	// }
-	// if !activityToExists(activityIRI, recipient) {
-	sql = `INSERT INTO activities_to (activity_id, iri) VALUES ($1,$2);`
-	_, err = tx.Exec(ctx, sql, activity_id, recipient)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+	if !activityToExists(activityIRI, recipient) {
+		sql := `INSERT INTO activities_to (activity_id, iri) VALUES ($1,$2);`
+		_, err = tx.Exec(ctx, sql, activity_id, recipient)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-	// }
 	tx.Commit(ctx)
 	return activityArb, nil
 }
@@ -694,6 +701,17 @@ func queryActivity(ID int) (Activity, error) {
 	return activity, nil
 }
 
+func queryActivityID(iri string) (int, error) {
+	sql := `SELECT id
+	FROM activities WHERE iri = $1;`
+	var activity_id int
+	err := db.QueryRow(context.Background(), sql, iri).Scan(&activity_id)
+	if err != nil {
+		return activity_id, err
+	}
+	return activity_id, nil
+}
+
 func activityExists(iri string) bool {
 	sql := `SELECT 1 from activities
 	WHERE iri = $1`
@@ -736,4 +754,28 @@ func queryObject(id int) (Object, error) {
 		return object, err
 	}
 	return object, nil
+}
+
+func queryObjectID(iri string) (int, error) {
+	sql := `SELECT id
+	FROM objects WHERE iri = $1;`
+	var object_id int
+	err := db.QueryRow(context.Background(), sql, iri).Scan(&object_id)
+	if err != nil {
+		return object_id, err
+	}
+	return object_id, nil
+}
+
+func objectExists(iri string) bool {
+	sql := `SELECT 1 from objects
+	WHERE iri = $1`
+
+	var result int
+	_ = db.QueryRow(context.Background(), sql, iri).Scan(&result)
+	if result != 1 {
+		return false
+	}
+	log.Println(fmt.Sprintf("%s exists", iri))
+	return true
 }
