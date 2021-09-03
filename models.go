@@ -1,6 +1,8 @@
 package main
 
-import "github.com/cheebz/arb"
+import (
+	"github.com/cheebz/arb"
+)
 
 // Configuration struct
 type Configuration struct {

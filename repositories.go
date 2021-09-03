@@ -351,8 +351,8 @@ func queryLikedTotalItemsByUserName(name string) (int, error) {
 	return count, nil
 }
 
-func queryLikedByUserName(name string) ([]string, error) {
-	sql := `SELECT obj.iri
+func queryLikedByUserName(name string) ([]Object, error) {
+	sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
 	FROM objects AS obj
 	JOIN activities AS act ON act.object_id = obj.id
 	WHERE act.type = 'Like'
@@ -371,11 +371,15 @@ func queryLikedByUserName(name string) ([]string, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var objects []string
+	var objects []Object
 	for rows.Next() {
-		var object string
+		object := generateNewObject()
 		err = rows.Scan(
-			&object,
+			&object.Type,
+			&object.Id,
+			&object.Content,
+			&object.AttributedTo,
+			&object.InReplyTo,
 		)
 		if err != nil {
 			return objects, err
