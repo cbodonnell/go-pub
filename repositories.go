@@ -629,18 +629,20 @@ func createOutboxReferenceActivity(activityArb arb.Arb) (arb.Arb, error) {
 	if err != nil {
 		return activityArb, err
 	}
-	sql := `INSERT INTO objects (iri) 
-	VALUES ($1) RETURNING id;`
-	var object_id int
-	err = tx.QueryRow(ctx, sql,
-		activityArb["object"],
-	).Scan(&object_id)
+	objectIRI, _ := activityArb.GetString("object")
+	object_id, err := queryObjectID(objectIRI)
 	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
+		sql := `INSERT INTO objects (iri) 
+		VALUES ($1) RETURNING id;`
+		err = tx.QueryRow(ctx, sql,
+			activityArb["object"],
+		).Scan(&object_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
 	}
-
-	sql = `INSERT INTO activities (type, actor, object_id)
+	sql := `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
 	var activity_id int
 	err = tx.QueryRow(ctx, sql, activityArb["type"], activityArb["actor"], object_id).Scan(&activity_id)
@@ -673,7 +675,6 @@ func queryActivity(ID int) (Activity, error) {
 	sql := `SELECT * FROM activities
 	WHERE id = $1
 	LIMIT 1`
-
 	var activity_id int
 	var object_id int
 	activity := generateNewActivity()
@@ -719,7 +720,6 @@ func queryActivityID(iri string) (int, error) {
 func activityExists(iri string) bool {
 	sql := `SELECT 1 from activities
 	WHERE iri = $1`
-
 	var result int
 	_ = db.QueryRow(context.Background(), sql, iri).Scan(&result)
 	if result != 1 {
@@ -733,7 +733,6 @@ func activityToExists(activityIRI string, recipientIRI string) bool {
 	sql := `SELECT 1 from activities_to
 	WHERE activity_id = (SELECT id from activities WHERE iri = $1 LIMIT 1)
 	AND iri = $2`
-
 	var result int
 	_ = db.QueryRow(context.Background(), sql, activityIRI, recipientIRI).Scan(&result)
 	if result != 1 {
@@ -774,7 +773,6 @@ func queryObjectID(iri string) (int, error) {
 func objectExists(iri string) bool {
 	sql := `SELECT 1 from objects
 	WHERE iri = $1`
-
 	var result int
 	_ = db.QueryRow(context.Background(), sql, iri).Scan(&result)
 	if result != 1 {
