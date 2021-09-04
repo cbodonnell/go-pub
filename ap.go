@@ -326,6 +326,9 @@ func (fed Federation) Federate() {
 			log.Println(err)
 			return
 		}
+		if activityToExists(activityIRI.String(), recipientIRI.String()) {
+			return
+		}
 		err = addActivityTo(activityIRI.String(), recipientIRI.String())
 		if err != nil {
 			log.Println(err)
