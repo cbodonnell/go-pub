@@ -10,8 +10,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/sigs"
 	"github.com/gorilla/mux"
+)
+
+var (
+	repository repositories.Repository
 )
 
 func sinkHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +50,7 @@ func getWebFinger(w http.ResponseWriter, r *http.Request) {
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	user, err := queryUserByName(name)
+	user, err := repository.QueryUserByName(name)
 	if err != nil {
 		notFound(w, err)
 		return

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cheebz/go-pub/repositories"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
@@ -22,8 +23,9 @@ func main() {
 	log.Println(fmt.Sprintf("Running in ENV: %s", ENV))
 	config = getConfig(ENV)
 
-	db = connectDb(config.Db)
+	db = repositories.ConnectDb(config.Db)
 	defer db.Close()
+	repository = repositories.NewPSQLRepository(db)
 
 	// Init router
 	r := mux.NewRouter()

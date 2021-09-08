@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/cheebz/go-pub/models"
 )
 
 // --- Configuration --- //
 
-var config Configuration
+var config models.Configuration
 
-func getConfig(ENV string) Configuration {
+func getConfig(ENV string) models.Configuration {
 	// Open config file
 	file, err := os.Open(fmt.Sprintf("config.%s.json", ENV))
 	if err != nil {
@@ -20,7 +22,7 @@ func getConfig(ENV string) Configuration {
 	defer file.Close()
 	// Decode to Configuration struct
 	decoder := json.NewDecoder(file)
-	var config Configuration
+	var config models.Configuration
 	err = decoder.Decode(&config)
 	if err != nil {
 		log.Fatal(err)
