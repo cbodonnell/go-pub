@@ -15,6 +15,18 @@ var logChan = make(chan string)
 var fedChan = make(chan Federation)
 
 func main() {
+
+	// get config
+	// connect db
+	// create repository
+	// create service
+	// create controller
+	// create router
+	// handle routes
+	// apply middleware
+	// listen and serve
+
+	// TODO: Create config package
 	// Get configuration
 	ENV := os.Getenv("ENV")
 	if ENV == "" {
