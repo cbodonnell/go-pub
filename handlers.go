@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/sigs"
 	"github.com/gorilla/mux"
@@ -82,7 +83,7 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		inbox := generateOrderedCollection(user.Name, config.Endpoints.Inbox, totalItems)
+		inbox := generateOrderedCollection(user.Name, config.C.Endpoints.Inbox, totalItems)
 		w.Header().Set("Content-Type", contentType)
 		json.NewEncoder(w).Encode(inbox)
 		return
@@ -99,7 +100,7 @@ func getInbox(w http.ResponseWriter, r *http.Request) {
 		orderedItems[i] = activity
 	}
 
-	inboxPage := generateOrderedCollectionPage(name, config.Endpoints.Inbox, orderedItems)
+	inboxPage := generateOrderedCollectionPage(name, config.C.Endpoints.Inbox, orderedItems)
 	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(inboxPage)
 }
@@ -111,7 +112,7 @@ func postInbox(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	recipient := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
+	recipient := fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name)
 	err = checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
@@ -220,7 +221,7 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		outbox := generateOrderedCollection(user.Name, config.Endpoints.Outbox, totalItems)
+		outbox := generateOrderedCollection(user.Name, config.C.Endpoints.Outbox, totalItems)
 		w.Header().Set("Content-Type", contentType)
 		json.NewEncoder(w).Encode(outbox)
 		return
@@ -237,7 +238,7 @@ func getOutbox(w http.ResponseWriter, r *http.Request) {
 		orderedItems[i] = activity
 	}
 
-	outboxPage := generateOrderedCollectionPage(name, config.Endpoints.Outbox, orderedItems)
+	outboxPage := generateOrderedCollectionPage(name, config.C.Endpoints.Outbox, orderedItems)
 	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(outboxPage)
 }
@@ -249,7 +250,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 		unauthorizedRequest(w, errors.New("not your outbox"))
 		return
 	}
-	actor := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, claims.Username)
+	actor := fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, claims.Username)
 	err := checkContentType(r.Header)
 	if err != nil {
 		badRequest(w, err)
@@ -301,7 +302,7 @@ func postOutbox(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// check if the recipient is internal
-		if objectIRI.Host == config.ServerName {
+		if objectIRI.Host == config.C.ServerName {
 			// if so, generate and federate an accept
 			activityIRI, err := getIRI(activityArb)
 			if err != nil {
@@ -375,7 +376,7 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		following := generateOrderedCollection(user.Name, config.Endpoints.Following, totalItems)
+		following := generateOrderedCollection(user.Name, config.C.Endpoints.Following, totalItems)
 		w.Header().Set("Content-Type", contentType)
 		json.NewEncoder(w).Encode(following)
 		return
@@ -392,7 +393,7 @@ func getFollowing(w http.ResponseWriter, r *http.Request) {
 		orderedItems[i] = actor
 	}
 
-	followingPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Following, orderedItems)
+	followingPage := generateOrderedCollectionPage(user.Name, config.C.Endpoints.Following, orderedItems)
 	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(followingPage)
 }
@@ -413,7 +414,7 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		followers := generateOrderedCollection(user.Name, config.Endpoints.Followers, totalItems)
+		followers := generateOrderedCollection(user.Name, config.C.Endpoints.Followers, totalItems)
 		w.Header().Set("Content-Type", contentType)
 		json.NewEncoder(w).Encode(followers)
 		return
@@ -430,7 +431,7 @@ func getFollowers(w http.ResponseWriter, r *http.Request) {
 		orderedItems[i] = actor
 	}
 
-	followersPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Followers, orderedItems)
+	followersPage := generateOrderedCollectionPage(user.Name, config.C.Endpoints.Followers, orderedItems)
 	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(followersPage)
 }
@@ -451,7 +452,7 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		liked := generateOrderedCollection(user.Name, config.Endpoints.Liked, totalItems)
+		liked := generateOrderedCollection(user.Name, config.C.Endpoints.Liked, totalItems)
 		w.Header().Set("Content-Type", contentType)
 		json.NewEncoder(w).Encode(liked)
 		return
@@ -468,7 +469,7 @@ func getLiked(w http.ResponseWriter, r *http.Request) {
 		orderedItems[i] = activity
 	}
 
-	likedPage := generateOrderedCollectionPage(user.Name, config.Endpoints.Liked, orderedItems)
+	likedPage := generateOrderedCollectionPage(user.Name, config.C.Endpoints.Liked, orderedItems)
 	w.Header().Set("Content-Type", contentType)
 	json.NewEncoder(w).Encode(likedPage)
 }

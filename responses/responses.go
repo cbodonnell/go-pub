@@ -1,22 +1,31 @@
-package main
+package responses
 
 import (
 	"net/http"
 
 	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/logging"
 )
 
-func created(w http.ResponseWriter, iri string) {
+var (
+	debug bool = false
+)
+
+func Debug() {
+	debug = true
+}
+
+func Created(w http.ResponseWriter, iri string) {
 	w.Header().Add("Location", iri)
 	w.WriteHeader(http.StatusCreated)
 }
 
-func accepted(w http.ResponseWriter) {
+func Accepted(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func badRequest(w http.ResponseWriter, err error) {
-	logCaller(err)
+func BadRequest(w http.ResponseWriter, err error) {
+	logging.LogCaller(err)
 	var msg string
 	if config.C.Debug {
 		msg = err.Error()
@@ -26,8 +35,8 @@ func badRequest(w http.ResponseWriter, err error) {
 	http.Error(w, msg, http.StatusBadRequest)
 }
 
-func notFound(w http.ResponseWriter, err error) {
-	logCaller(err)
+func NotFound(w http.ResponseWriter, err error) {
+	logging.LogCaller(err)
 	var msg string
 	if config.C.Debug {
 		msg = err.Error()
@@ -37,8 +46,8 @@ func notFound(w http.ResponseWriter, err error) {
 	http.Error(w, msg, http.StatusNotFound)
 }
 
-func unauthorizedRequest(w http.ResponseWriter, err error) {
-	logCaller(err)
+func UnauthorizedRequest(w http.ResponseWriter, err error) {
+	logging.LogCaller(err)
 	var msg string
 	if config.C.Debug {
 		msg = err.Error()
@@ -48,8 +57,8 @@ func unauthorizedRequest(w http.ResponseWriter, err error) {
 	http.Error(w, msg, http.StatusUnauthorized)
 }
 
-func internalServerError(w http.ResponseWriter, err error) {
-	logCaller(err)
+func InternalServerError(w http.ResponseWriter, err error) {
+	logging.LogCaller(err)
 	var msg string
 	if config.C.Debug {
 		msg = err.Error()

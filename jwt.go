@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/cheebz/go-pub/config"
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -27,7 +28,7 @@ func checkJWTClaims(r *http.Request) (*JWTClaims, error) {
 
 	claims := &JWTClaims{}
 	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.JWTKey), nil
+		return []byte(config.C.JWTKey), nil
 	})
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func checkJWTClaims(r *http.Request) (*JWTClaims, error) {
 
 func refresh(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
-	authReq, err := http.NewRequest("GET", fmt.Sprintf("%s/", config.Auth), nil)
+	authReq, err := http.NewRequest("GET", fmt.Sprintf("%s/", config.C.Auth), nil)
 	if err != nil {
 		return
 	}

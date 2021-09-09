@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/models"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type repository struct{}
 
+// TODO: Look to incorporate https://gorm.io/gorm
 var (
 	db *pgxpool.Pool
 )
@@ -20,8 +22,8 @@ func NewPSQLRepository(source *pgxpool.Pool) Repository {
 	return &repository{}
 }
 
-// TODO: Move this to a database package with Connect and Close methods
-func ConnectDb(s models.DataSource) *pgxpool.Pool {
+// TODO: Make this less database dependent
+func ConnectDb(s config.DataSource) *pgxpool.Pool {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		s.Host, s.Port, s.User, s.Password, s.Dbname)

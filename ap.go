@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/cheebz/arb"
+	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/sigs"
 )
 
@@ -334,7 +335,7 @@ func (fed Federation) Federate() {
 			log.Println(err)
 			return
 		}
-		if recipientIRI.Host != config.ServerName {
+		if recipientIRI.Host != config.C.ServerName {
 			inbox, err := recipient.GetString("inbox")
 			if err != nil {
 				log.Println(err)
@@ -392,8 +393,8 @@ func (fed Federation) Post(inbox string) {
 	}
 	req.Header.Add("Content-Type", contentType)
 
-	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.Protocol, config.ServerName, config.Endpoints.Users, fed.Name)
-	err = sigs.SignRequest(req, fed.Activity.ToBytes(), config.RSAPrivateKey, keyID)
+	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, fed.Name)
+	err = sigs.SignRequest(req, fed.Activity.ToBytes(), config.C.RSAPrivateKey, keyID)
 	if err != nil {
 		log.Println(err)
 		return

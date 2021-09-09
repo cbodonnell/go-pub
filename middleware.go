@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+
+	"github.com/cheebz/go-pub/config"
 )
 
 // isValidURL tests a string to determine if it is a well-structured url or not.
@@ -27,19 +29,19 @@ func acceptMiddleware(h http.Handler) http.Handler {
 		err := checkAccept(r.Header)
 		if err != nil {
 			// if not requesting activity serve client app
-			if isValidURL(config.Client) {
+			if isValidURL(config.C.Client) {
 				// if url append request URI and redirect
-				http.Redirect(w, r, config.Client+r.URL.RequestURI(), http.StatusSeeOther)
+				http.Redirect(w, r, config.C.Client+r.URL.RequestURI(), http.StatusSeeOther)
 				return
 			} else {
 				// else try and serve static site
 				fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
 				if !fileRegexp.MatchString(r.URL.Path) {
 					// if not file, serve client app
-					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.Client))
+					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.C.Client))
 				} else {
 					// else serve static file
-					http.FileServer(http.Dir(config.Client)).ServeHTTP(w, r)
+					http.FileServer(http.Dir(config.C.Client)).ServeHTTP(w, r)
 				}
 				return
 			}

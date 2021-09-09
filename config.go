@@ -11,7 +11,7 @@ import (
 
 // --- Configuration --- //
 
-var config models.Configuration
+var conf models.Configuration
 
 func getConfig(ENV string) models.Configuration {
 	// Open config file

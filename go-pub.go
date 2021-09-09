@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/controllers"
 	"github.com/cheebz/go-pub/repositories"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -33,11 +35,13 @@ func main() {
 		ENV = "dev"
 	}
 	log.Println(fmt.Sprintf("Running in ENV: %s", ENV))
-	config = getConfig(ENV)
+	// config = getConfig(ENV)
+	config.ReadConfig(ENV)
 
-	db = repositories.ConnectDb(config.Db)
+	db = repositories.ConnectDb(config.C.Db)
 	defer db.Close()
 	repository = repositories.NewPSQLRepository(db)
+	controller := controllers.NewUserController(repository)
 
 	// Init router
 	r := mux.NewRouter()
@@ -49,7 +53,7 @@ func main() {
 
 	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
-	get.HandleFunc("/users/{name:[[:alnum:]]+}", getUser).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}", controller.GetUser).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
@@ -82,7 +86,7 @@ func main() {
 	go handleFederation()
 
 	// Run server
-	port := config.Port
+	port := config.C.Port
 	log.Println(fmt.Sprintf("Serving on port %d", port))
 
 	// CORS in dev
@@ -94,14 +98,14 @@ func main() {
 		r.Use(cors.Handler)
 	}
 
-	if config.LogFile != "" {
-		logFile := setLogFile(config.LogFile)
+	if config.C.LogFile != "" {
+		logFile := setLogFile(config.C.LogFile)
 		defer logFile.Close()
 	}
 
 	// TLS
-	if config.SSLCert == "" {
+	if config.C.SSLCert == "" {
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 	}
-	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", port), config.SSLCert, config.SSLKey, r))
+	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", port), config.C.SSLCert, config.C.SSLKey, r))
 }

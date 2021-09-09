@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/cheebz/arb"
+	"github.com/cheebz/go-pub/config"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -62,7 +63,7 @@ func createUser(name string) (string, error) {
 	sql := `INSERT INTO users (name, discoverable, iri)
 	VALUES ($1, true, $2)`
 
-	iri := fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name)
+	iri := fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name)
 	_, err := db.Exec(context.Background(), sql, name, iri)
 	if err != nil {
 		return iri, err
@@ -78,7 +79,7 @@ func queryInboxTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	).Scan(&count)
 	if err != nil {
 		return count, err
@@ -94,7 +95,7 @@ func queryInboxByUserName(name string) ([]Activity, error) {
 	ORDER BY id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -145,7 +146,7 @@ func queryOutboxTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	).Scan(&count)
 	if err != nil {
 		return count, err
@@ -160,7 +161,7 @@ func queryOutboxByUserName(name string) ([]Activity, error) {
 	ORDER BY id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -218,7 +219,7 @@ func queryFollowingTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	).Scan(
 		&count,
 	)
@@ -242,7 +243,7 @@ func queryFollowingByUserName(name string) ([]string, error) {
 	ORDER BY act.id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -280,7 +281,7 @@ func queryFollowersTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	).Scan(
 		&count,
 	)
@@ -304,7 +305,7 @@ func queryFollowersByUserName(name string) ([]string, error) {
 	ORDER BY act.id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -341,7 +342,7 @@ func queryLikedTotalItemsByUserName(name string) (int, error) {
 
 	var count int
 	err := db.QueryRow(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	).Scan(
 		&count,
 	)
@@ -365,7 +366,7 @@ func queryLikedByUserName(name string) ([]Object, error) {
 	ORDER BY act.id DESC`
 
 	rows, err := db.Query(context.Background(), sql,
-		fmt.Sprintf("%s://%s/%s/%s", config.Protocol, config.ServerName, config.Endpoints.Users, name),
+		fmt.Sprintf("%s://%s/%s/%s", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Users, name),
 	)
 	if err != nil {
 		return nil, err
@@ -573,7 +574,7 @@ func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb) (arb.Arb
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	objectArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Objects, object_id)
+	objectArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Objects, object_id)
 	sql = `UPDATE objects
 	SET iri = $1
 	WHERE id = $2;`
@@ -590,7 +591,7 @@ func createOutboxActivityDetail(activityArb arb.Arb, objectArb arb.Arb) (arb.Arb
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
@@ -650,7 +651,7 @@ func createOutboxReferenceActivity(activityArb arb.Arb) (arb.Arb, error) {
 		tx.Rollback(ctx)
 		return activityArb, err
 	}
-	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.Protocol, config.ServerName, config.Endpoints.Activities, activity_id)
+	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", config.C.Protocol, config.C.ServerName, config.C.Endpoints.Activities, activity_id)
 	sql = `UPDATE activities
 	SET iri = $1
 	WHERE id = $2;`
