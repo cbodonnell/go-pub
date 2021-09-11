@@ -1,4 +1,5 @@
 config.*.json
+*.env
 go-pub
 go-pub.exe
 static/*

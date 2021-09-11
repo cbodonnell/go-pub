@@ -51,6 +51,12 @@ type User struct {
 	IRI          string `json:"url"`
 }
 
+// Group struct
+type Group struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 // WebFinger struct
 type WebFinger struct {
 	Subject string          `json:"subject"`

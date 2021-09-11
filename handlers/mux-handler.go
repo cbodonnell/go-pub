@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"encoding/json"
@@ -6,13 +6,16 @@ import (
 	"net/http"
 
 	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/middleware"
 	"github.com/cheebz/go-pub/models"
 	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/go-pub/responses"
 	"github.com/gorilla/mux"
 )
 
-type controller struct{}
+type MuxHandler struct {
+	repo repositories.Repository
+}
 
 var (
 	conf          config.Configuration
@@ -33,13 +36,48 @@ var (
 	}
 )
 
-func NewUserController(_conf config.Configuration, _repo repositories.Repository) UserController {
+func NewMuxHandler(_conf config.Configuration, _repo repositories.Repository) *mux.Router {
+	h := &MuxHandler{
+		repo: repo,
+	}
 	conf = _conf
 	repo = _repo
-	return &controller{}
+	r := mux.NewRouter()
+
+	// wf := r.NewRoute().Subrouter() // -> webfinger
+	// wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+
+	userMiddleware := middleware.CreateUserMiddleware(repo)
+
+	get := r.NewRoute().Subrouter() // -> public GET requests
+	get.Use(middleware.AcceptMiddleware, userMiddleware)
+	get.HandleFunc("/users/{name:[[:alnum:]]+}", h.GetUser).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/activities/{id}", getActivity).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/objects/{id}", getObject).Methods("GET", "OPTIONS")
+
+	// post := r.NewRoute().Subrouter() // -> public POST requests
+	// post.Use(contentTypeMiddleware, userMiddleware)
+	// post.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", postInbox).Methods("POST", "OPTIONS")
+
+	// aGet := get.NewRoute().Subrouter()
+	// aGet.Use(jwtMiddleware)
+	// aGet.HandleFunc("/users/{name:[[:alnum:]]+}/inbox", getInbox).Methods("GET", "OPTIONS")
+
+	// aPost := post.NewRoute().Subrouter()
+	// aPost.Use(jwtMiddleware)
+	// aPost.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", postOutbox).Methods("POST", "OPTIONS")
+
+	// sink := r.NewRoute().Subrouter() // -> sink to handle all other routes
+	// sink.Use(acceptMiddleware)
+	// sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
+	return r
 }
 
-func (*controller) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	user, err := repo.QueryUserByName(name)
 	if err != nil {

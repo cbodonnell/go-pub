@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	repository repositories.Repository
+	repo repositories.Repository
 )
 
 func sinkHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +51,7 @@ func getWebFinger(w http.ResponseWriter, r *http.Request) {
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	user, err := repository.QueryUserByName(name)
+	user, err := repo.QueryUserByName(name)
 	if err != nil {
 		notFound(w, err)
 		return
