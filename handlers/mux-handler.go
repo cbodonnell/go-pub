@@ -2,57 +2,45 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"github.com/cheebz/go-pub/activitypub"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/middleware"
-	"github.com/cheebz/go-pub/models"
-	"github.com/cheebz/go-pub/repositories"
+	"github.com/cheebz/go-pub/resources"
 	"github.com/cheebz/go-pub/responses"
+	"github.com/cheebz/go-pub/services"
 	"github.com/gorilla/mux"
 )
 
 type MuxHandler struct {
-	repo repositories.Repository
+	endpoints  config.Endpoints
+	middleware middleware.Middleware
+	service    services.Service
+	resource   resources.Resource
+	response   responses.Response
+	router     *mux.Router
 }
 
-var (
-	conf          config.Configuration
-	repo          repositories.Repository
-	accept        = "application/activity+json"
-	acceptHeaders = http.Header{
-		"Accept": []string{
-			"application/activity+json",
-			"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-		},
-	}
-	contentType        = "application/activity+json"
-	contentTypeHeaders = http.Header{
-		"Content-Type": []string{
-			"application/activity+json",
-			"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-		},
-	}
-)
-
-func NewMuxHandler(_conf config.Configuration, _repo repositories.Repository) *mux.Router {
+func NewMuxHandler(_endpoints config.Endpoints, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
 	h := &MuxHandler{
-		repo: repo,
+		endpoints:  _endpoints,
+		middleware: _middleware,
+		service:    _service,
+		resource:   _resource,
+		response:   _response,
+		router:     mux.NewRouter(),
 	}
-	conf = _conf
-	repo = _repo
-	r := mux.NewRouter()
 
-	// wf := r.NewRoute().Subrouter() // -> webfinger
-	// wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+	wf := h.router.NewRoute().Subrouter() // -> webfinger
+	wf.HandleFunc("/.well-known/webfinger", h.GetWebFinger).Methods("GET", "OPTIONS")
 
-	userMiddleware := middleware.CreateUserMiddleware(repo)
+	userMiddleware := h.middleware.CreateUserMiddleware(h.service)
 
-	get := r.NewRoute().Subrouter() // -> public GET requests
-	get.Use(middleware.AcceptMiddleware, userMiddleware)
+	get := h.router.NewRoute().Subrouter() // -> public GET requests
+	get.Use(h.middleware.AcceptMiddleware, userMiddleware)
 	get.HandleFunc("/users/{name:[[:alnum:]]+}", h.GetUser).Methods("GET", "OPTIONS")
-	// get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
+	get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", h.GetOutbox).Methods("GET", "OPTIONS")
 	// get.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
 	// get.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
 	// get.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
@@ -74,49 +62,83 @@ func NewMuxHandler(_conf config.Configuration, _repo repositories.Repository) *m
 	// sink := r.NewRoute().Subrouter() // -> sink to handle all other routes
 	// sink.Use(acceptMiddleware)
 	// sink.PathPrefix("/").HandlerFunc(sinkHandler).Methods("GET", "OPTIONS")
-	return r
+	return h
+}
+
+// TODO: Change this to return only what is needed for http.ListenAndServe(...)
+func (h *MuxHandler) GetRouter() *mux.Router {
+	return h.router
+}
+
+func (h *MuxHandler) AllowCORS(allowedOrigins []string) {
+	cors := h.middleware.CreateCORSMiddleware(allowedOrigins)
+	h.router.Use(cors)
+}
+
+func (h *MuxHandler) GetWebFinger(w http.ResponseWriter, r *http.Request) {
+	resource := r.FormValue("resource")
+	name, err := h.resource.ParseResource(resource)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	user, err := h.service.DiscoverUserByName(name)
+	if err != nil {
+		h.response.NotFound(w, err)
+		return
+	}
+	webfinger := h.resource.GenerateWebFinger(user.Name)
+	w.Header().Set("Content-Type", "application/jrd+json")
+	json.NewEncoder(w).Encode(webfinger)
 }
 
 func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	user, err := repo.QueryUserByName(name)
+	user, err := h.service.GetUserByName(name)
 	if err != nil {
-		responses.NotFound(w, err)
+		h.response.NotFound(w, err)
 		return
 	}
-
-	actor := generateActor(user.Name)
-	w.Header().Set("Content-Type", contentType)
+	actor := h.resource.GenerateActor(user.Name)
+	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(actor)
 }
 
-func generateActor(name string) models.Actor {
-	return models.Actor{
-		Object: models.Object{
-			Context: []interface{}{
-				"https://www.w3.org/ns/activitystreams",
-				"https://w3id.org/security/v1",
-				map[string]interface{}{
-					"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
-				},
-			},
-			Id:      fmt.Sprintf("%s://%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name),
-			Type:    "Person",
-			Name:    name,
-			Url:     fmt.Sprintf("%s://%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name),
-			Summary: fmt.Sprintf("Summary of %s to come...", name), // TODO: Implement this
-		},
-		Inbox:                     fmt.Sprintf("%s://%s/%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name, conf.Endpoints.Inbox),
-		Outbox:                    fmt.Sprintf("%s://%s/%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name, conf.Endpoints.Outbox),
-		Following:                 fmt.Sprintf("%s://%s/%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name, conf.Endpoints.Following),
-		Followers:                 fmt.Sprintf("%s://%s/%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name, conf.Endpoints.Followers),
-		Liked:                     fmt.Sprintf("%s://%s/%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name, conf.Endpoints.Liked),
-		PreferredUsername:         name,
-		ManuallyApprovesFollowers: false, // TODO: Implement this
-		PublicKey: models.PublicKey{
-			ID:           fmt.Sprintf("%s://%s/%s/%s#main-key", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name),
-			Owner:        fmt.Sprintf("%s://%s/%s/%s", conf.Protocol, conf.ServerName, conf.Endpoints.Users, name),
-			PublicKeyPem: conf.RSAPublicKey,
-		},
+func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	user, err := h.service.GetUserByName(name)
+	if err != nil {
+		h.response.NotFound(w, err)
+		return
 	}
+	page := r.FormValue("page")
+	if page != "true" {
+		totalItems, err := h.service.GetOutboxTotalItemsByUserName(user.Name)
+		if err != nil {
+			h.response.InternalServerError(w, err)
+			return
+		}
+		// TODO: abstract this out to the resource package?
+		// would be a call to h.resource.GenerateOutbox
+		// this would remove the config dependency (for now...)
+		outbox := h.resource.GenerateOrderedCollection(user.Name, h.endpoints.Outbox, totalItems)
+		w.Header().Set("Content-Type", activitypub.ContentType)
+		json.NewEncoder(w).Encode(outbox)
+		return
+	}
+	activities, err := h.service.GetOutboxByUserName(user.Name)
+	if err != nil {
+		h.response.InternalServerError(w, err)
+		return
+	}
+	// TODO: abstract this out to the resource package?
+	// would be a call to h.resource.GenerateOutboxPage
+	// this would remove the config dependency (for now...)
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
+	}
+	outboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Outbox, orderedItems)
+	w.Header().Set("Content-Type", activitypub.ContentType)
+	json.NewEncoder(w).Encode(outboxPage)
 }

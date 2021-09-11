@@ -11,14 +11,13 @@ import (
 	"strconv"
 
 	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/sigs"
 	"github.com/gorilla/mux"
 )
 
-var (
-	repo repositories.Repository
-)
+// var (
+// 	repo repositories.Repository
+// )
 
 func sinkHandler(w http.ResponseWriter, r *http.Request) {
 	notFound(w, errors.New("endpoint does not exist"))
@@ -49,18 +48,18 @@ func getWebFinger(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(webfinger)
 }
 
-func getUser(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
-	user, err := repo.QueryUserByName(name)
-	if err != nil {
-		notFound(w, err)
-		return
-	}
+// func getUser(w http.ResponseWriter, r *http.Request) {
+// 	name := mux.Vars(r)["name"]
+// 	user, err := queryUserByName(name)
+// 	if err != nil {
+// 		notFound(w, err)
+// 		return
+// 	}
 
-	actor := generateActor(user.Name)
-	w.Header().Set("Content-Type", contentType)
-	json.NewEncoder(w).Encode(actor)
-}
+// 	actor := generateActor(user.Name)
+// 	w.Header().Set("Content-Type", contentType)
+// 	json.NewEncoder(w).Encode(actor)
+// }
 
 func getInbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]

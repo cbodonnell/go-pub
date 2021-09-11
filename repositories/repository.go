@@ -7,4 +7,6 @@ type Repository interface {
 	QueryUserByName(name string) (models.User, error)
 	CheckUser(name string) error
 	CreateUser(name string) (string, error)
+	QueryOutboxTotalItemsByUserName(name string) (int, error)
+	QueryOutboxByUserName(name string) ([]models.Activity, error)
 }

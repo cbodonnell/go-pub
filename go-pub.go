@@ -9,8 +9,11 @@ import (
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/handlers"
 	"github.com/cheebz/go-pub/logging"
+	"github.com/cheebz/go-pub/middleware"
 	"github.com/cheebz/go-pub/repositories"
-	"github.com/rs/cors"
+	"github.com/cheebz/go-pub/resources"
+	"github.com/cheebz/go-pub/responses"
+	"github.com/cheebz/go-pub/services"
 )
 
 var logChan = make(chan string)
@@ -29,20 +32,31 @@ func main() {
 	}
 
 	// create repository
-	repo = repositories.NewPSQLRepository(conf.Db)
+	repo := repositories.NewPSQLRepository(conf.Db)
 	defer repo.Close()
-	// TODO: create services package
+	// create service
+	service := services.NewActivityPubService(conf, repo)
+	// create response writer
+	response := responses.NewActivityPubResponse(conf.Debug)
+	// create middleware engine
+	middle := middleware.NewActivityPubMiddleware(conf.Client, response)
+	// create resource generator
+	resource := resources.NewActivityPubResource(conf)
 	// create handler
-	r := handlers.NewMuxHandler(conf, repo)
+	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response)
+	if ENV == "dev" {
+		handler.AllowCORS([]string{conf.Client})
+	}
+	r := handler.GetRouter()
 
 	// TODO: Move remaining routes to mux-handlers package
-	wf := r.NewRoute().Subrouter() // -> webfinger
-	wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
+	// wf := r.NewRoute().Subrouter() // -> webfinger
+	// wf.HandleFunc("/.well-known/webfinger", getWebFinger).Methods("GET", "OPTIONS")
 
 	get := r.NewRoute().Subrouter() // -> public GET requests
 	get.Use(acceptMiddleware, userMiddleware)
 	// get.HandleFunc("/users/{name:[[:alnum:]]+}", controller.GetUser).Methods("GET", "OPTIONS")
-	get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
+	// get.HandleFunc("/users/{name:[[:alnum:]]+}/outbox", getOutbox).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/following", getFollowing).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/followers", getFollowers).Methods("GET", "OPTIONS")
 	get.HandleFunc("/users/{name:[[:alnum:]]+}/liked", getLiked).Methods("GET", "OPTIONS")
@@ -73,27 +87,17 @@ func main() {
 	go handleLogs()
 	go handleFederation()
 
-	// Run server
-	port := conf.Port
-	log.Println(fmt.Sprintf("Serving on port %d", port))
-
-	// CORS in dev
-	if ENV == "dev" {
-		cors := cors.New(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
-			AllowCredentials: true,
-		})
-		r.Use(cors.Handler)
-	}
-
 	if conf.LogFile != "" {
 		logFile := logging.SetLogFile(conf.LogFile)
 		defer logFile.Close()
 	}
 
+	// Run server
+	log.Println(fmt.Sprintf("Serving on port %d", conf.Port))
+
 	// TLS
 	if conf.SSLCert == "" {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r))
 	}
-	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", port), conf.SSLCert, conf.SSLKey, r))
+	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", conf.Port), conf.SSLCert, conf.SSLKey, r))
 }

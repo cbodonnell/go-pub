@@ -105,6 +105,15 @@ type Object struct {
 	Duration     string      `json:"duration,omitempty"`
 }
 
+func NewObject() Object {
+	var object Object
+	object.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return object
+}
+
 // Link struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-link)
 type Link struct {
 	Context []string `json:"@context"`
@@ -168,6 +177,15 @@ type Activity struct {
 	Object
 	Actor       string      `json:"actor"`
 	ChildObject interface{} `json:"object"`
+}
+
+func NewActivity() Activity {
+	var activity Activity
+	activity.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return activity
 }
 
 type Federation struct {
