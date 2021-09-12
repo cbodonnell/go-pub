@@ -1,26 +1,31 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
 
 	"github.com/cheebz/go-pub/activitypub"
-	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/jwt"
 	"github.com/cheebz/go-pub/responses"
 	"github.com/cheebz/go-pub/services"
+	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
 
 type ActivityPubMiddleware struct {
+	client   string
 	response responses.Response
+	jwt      jwt.JWT
 }
 
-func NewActivityPubMiddleware(_client string, _response responses.Response) Middleware {
+func NewActivityPubMiddleware(_client string, _response responses.Response, _jwt jwt.JWT) Middleware {
 	return &ActivityPubMiddleware{
+		client:   _client,
 		response: _response,
+		jwt:      _jwt,
 	}
 }
 
@@ -52,19 +57,19 @@ func (m *ActivityPubMiddleware) AcceptMiddleware(h http.Handler) http.Handler {
 		err := activitypub.CheckAccept(r.Header)
 		if err != nil {
 			// if not requesting activity serve client app
-			if isValidURL(config.C.Client) {
+			if isValidURL(m.client) {
 				// if url append request URI and redirect
-				http.Redirect(w, r, config.C.Client+r.URL.RequestURI(), http.StatusSeeOther)
+				http.Redirect(w, r, m.client+r.URL.RequestURI(), http.StatusSeeOther)
 				return
 			} else {
 				// else try and serve static site
 				fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
 				if !fileRegexp.MatchString(r.URL.Path) {
 					// if not file, serve client app
-					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", config.C.Client))
+					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", m.client))
 				} else {
 					// else serve static file
-					http.FileServer(http.Dir(config.C.Client)).ServeHTTP(w, r)
+					http.FileServer(http.Dir(m.client)).ServeHTTP(w, r)
 				}
 				return
 			}
@@ -84,35 +89,48 @@ func (m *ActivityPubMiddleware) ContentTypeMiddleware(h http.Handler) http.Handl
 	})
 }
 
-func (m *ActivityPubMiddleware) JwtMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := jwt.CheckJWTClaims(r)
-		if err != nil {
-			jwt.Refresh(w, r)
-		}
-		_, err = jwt.CheckJWTClaims(r)
-		if err != nil {
-			m.response.UnauthorizedRequest(w, err)
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
-// func refreshMiddleware(h http.Handler) http.Handler {
+// func (m *ActivityPubMiddleware) JwtMiddleware(h http.Handler) http.Handler {
 // 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		_, err := checkJWTClaims(r)
+// 		_, err := m.jwt.CheckJWTClaims(r)
 // 		if err != nil {
-// 			refresh(w, r)
+// 			m.jwt.Refresh(w, r)
+// 			_, err = m.jwt.CheckJWTClaims(r)
+// 			if err != nil {
+// 				m.response.UnauthorizedRequest(w, err)
+// 				return
+// 			}
 // 		}
 // 		h.ServeHTTP(w, r)
 // 	})
 // }
 
+func (m *ActivityPubMiddleware) CreateJwtUsernameMiddleware(nameParam string) func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, err := m.jwt.CheckJWTClaims(r)
+			if err != nil {
+				m.jwt.Refresh(w, r)
+				claims, err = m.jwt.CheckJWTClaims(r)
+				if err != nil {
+					m.response.UnauthorizedRequest(w, err)
+					return
+				}
+			}
+			// TODO: Get rid of the mux dependency here??
+			name := mux.Vars(r)[nameParam]
+			if claims.Username != name {
+				m.response.UnauthorizedRequest(w, errors.New("that's not yours"))
+				return
+			}
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (m *ActivityPubMiddleware) CreateUserMiddleware(service services.Service) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, err := jwt.CheckJWTClaims(r)
+			claims, err := m.jwt.CheckJWTClaims(r)
 			if err != nil {
 				h.ServeHTTP(w, r)
 				return
@@ -129,22 +147,3 @@ func (m *ActivityPubMiddleware) CreateUserMiddleware(service services.Service) f
 		})
 	}
 }
-
-// func UserMiddleware(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		claims, err := jwt.CheckJWTClaims(r)
-// 		if err != nil {
-// 			h.ServeHTTP(w, r)
-// 			return
-// 		}
-// 		err = service.checkUser(claims.Username)
-// 		if err != nil {
-// 			_, err = service.createUser(claims.Username)
-// 			if err != nil {
-// 				responses.BadRequest(w, err)
-// 				return
-// 			}
-// 		}
-// 		h.ServeHTTP(w, r)
-// 	})
-// }

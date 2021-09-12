@@ -13,7 +13,6 @@ type ActivityPubResource struct {
 	conf config.Configuration
 }
 
-// TODO: Change this to return only what is needed for http.ListenAndServe(...)
 func NewActivityPubResource(_conf config.Configuration) Resource {
 	return &ActivityPubResource{
 		conf: _conf,

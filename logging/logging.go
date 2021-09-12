@@ -20,7 +20,8 @@ func SetLogFile(file string) *os.File {
 }
 
 func LogCaller(err error) {
-	_, path, line, _ := runtime.Caller(2)
-	file := filepath.Base(path)
-	log.Printf("%s:%d: %v", file, line, err)
+	if _, path, line, ok := runtime.Caller(2); ok {
+		file := filepath.Base(path)
+		log.Printf("%s:%d: %v", file, line, err)
+	}
 }

@@ -295,3 +295,29 @@ func GetRecipients(a arb.Arb, prop string) ([]*url.URL, error) {
 	}
 	return urls, nil
 }
+
+func FetchPublicKeyString(keyId string) (string, error) {
+	client := http.DefaultClient
+	req, err := http.NewRequest("GET", keyId, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Accept", Accept)
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	key, err := arb.Read(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	publicKey, err := key.GetArb("publicKey")
+	if err != nil {
+		return "", err
+	}
+	publicKeyString, err := publicKey.GetString("publicKeyPem")
+	if err != nil {
+		return "", err
+	}
+	return publicKeyString, nil
+}
