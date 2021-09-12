@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"github.com/cheebz/arb"
@@ -43,22 +43,6 @@ type DataSource struct {
 	Dbname   string `json:"dbname"`
 }
 
-// Group struct
-type Group struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-// HomeData struct - Data sent to the index.html template
-type HomeData struct {
-	Claims         *JWTClaims
-	User           User
-	ServerName     string
-	UsersEndpoint  string
-	OutboxEndpoint string
-	Auth           string
-}
-
 // User struct
 type User struct {
 	ID           int    `json:"id"`
@@ -67,20 +51,10 @@ type User struct {
 	IRI          string `json:"url"`
 }
 
-// ActivityOLD struct
-type ActivityOLD struct {
-	ID       int      `json:"id"`
-	UserName string   `json:"userName"`
-	Type     string   `json:"type"`
-	To       []string `json:"to"`
-}
-
-// Note struct
-type Note struct {
-	ID       int         `json:"id"`
-	UserName string      `json:"userName"`
-	Content  string      `json:"content"`
-	Activity ActivityOLD `json:"activity"`
+// Group struct
+type Group struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 // WebFinger struct
@@ -129,6 +103,15 @@ type Object struct {
 	Bcc          []string    `json:"bcc,omitempty"`
 	MediaType    string      `json:"mediaType,omitempty"`
 	Duration     string      `json:"duration,omitempty"`
+}
+
+func NewObject() Object {
+	var object Object
+	object.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return object
 }
 
 // Link struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-link)
@@ -194,6 +177,15 @@ type Activity struct {
 	Object
 	Actor       string      `json:"actor"`
 	ChildObject interface{} `json:"object"`
+}
+
+func NewActivity() Activity {
+	var activity Activity
+	activity.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return activity
 }
 
 type Federation struct {

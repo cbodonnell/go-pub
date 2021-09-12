@@ -1,4 +1,4 @@
-package main
+package logging
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"runtime"
 )
 
-func setLogFile(file string) *os.File {
+func SetLogFile(file string) *os.File {
 	logFile, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -19,8 +19,9 @@ func setLogFile(file string) *os.File {
 	return logFile
 }
 
-func logCaller(err error) {
-	_, path, line, _ := runtime.Caller(2)
-	file := filepath.Base(path)
-	log.Printf("%s:%d: %v", file, line, err)
+func LogCaller(err error) {
+	if _, path, line, ok := runtime.Caller(2); ok {
+		file := filepath.Base(path)
+		log.Printf("%s:%d: %v", file, line, err)
+	}
 }
