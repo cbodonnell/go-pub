@@ -49,6 +49,7 @@ func main() {
 	resource := resources.NewActivityPubResource(conf)
 	// create cache layer
 	cache := cache.NewRedisCache(conf)
+	cache.FlushDB()
 	// create handler (TODO: Make an options struct??)
 	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response, cache)
 	if ENV == "dev" {

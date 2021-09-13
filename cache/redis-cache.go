@@ -64,3 +64,11 @@ func (c *RedisCache) Del(key string) error {
 	}
 	return nil
 }
+
+func (c *RedisCache) FlushDB() error {
+	_, err := c.client.FlushDB().Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
