@@ -17,22 +17,18 @@ type RedisCache struct {
 
 func NewRedisCache(_conf config.Configuration) Cache {
 	return &RedisCache{
-		conf: _conf,
-		client: redis.NewClient(&redis.Options{
-			Addr:     _conf.Redis.Address,
-			Password: _conf.Redis.Password,
-			DB:       _conf.Redis.Db,
-		}),
+		conf:   _conf,
+		client: createClient(_conf.Redis),
 	}
 }
 
-// func (c *RedisCache) getClient() *redis.Client {
-// 	return redis.NewClient(&redis.Options{
-// 		Addr:     c.conf.Redis.Address,
-// 		Password: c.conf.Redis.Password,
-// 		DB:       c.conf.Redis.Db,
-// 	})
-// }
+func createClient(conf config.RedisConfig) *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     conf.Address,
+		Password: conf.Password,
+		DB:       conf.Db,
+	})
+}
 
 func (c *RedisCache) Set(key string, value interface{}) error {
 	json, err := json.Marshal(value)
