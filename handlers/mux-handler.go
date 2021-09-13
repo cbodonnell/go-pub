@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/cheebz/go-pub/activitypub"
+	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/middleware"
+	"github.com/cheebz/go-pub/models"
 	"github.com/cheebz/go-pub/resources"
 	"github.com/cheebz/go-pub/responses"
 	"github.com/cheebz/go-pub/services"
@@ -24,6 +27,7 @@ type MuxHandler struct {
 	service    services.Service
 	resource   resources.Resource
 	response   responses.Response
+	cache      cache.Cache
 	router     *mux.Router
 }
 
@@ -31,13 +35,14 @@ var (
 	nameParam = "name"
 )
 
-func NewMuxHandler(_endpoints config.Endpoints, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
+func NewMuxHandler(_endpoints config.Endpoints, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response, _cache cache.Cache) Handler {
 	h := &MuxHandler{
 		endpoints:  _endpoints,
 		middleware: _middleware,
 		service:    _service,
 		resource:   _resource,
 		response:   _response,
+		cache:      _cache,
 		router:     mux.NewRouter(),
 	}
 	h.setupRoutes()
@@ -101,24 +106,40 @@ func (h *MuxHandler) GetWebFinger(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	user, err := h.service.DiscoverUserByName(name)
+	webfinger, err := h.cache.Get(fmt.Sprintf("webfinger-%s", name), models.WebFinger{})
 	if err != nil {
-		h.response.NotFound(w, err)
-		return
+		log.Println(fmt.Sprintf("no cache for webfinger-%s", name))
+		user, err := h.service.DiscoverUserByName(name)
+		if err != nil {
+			h.response.NotFound(w, err)
+			return
+		}
+		webfinger = h.resource.GenerateWebFinger(user.Name)
+		err = h.cache.Set(fmt.Sprintf("webfinger-%s", name), webfinger)
+		if err != nil {
+			log.Println(fmt.Sprintf("failed to cache webfinger-%s: %+v", name, webfinger))
+		}
 	}
-	webfinger := h.resource.GenerateWebFinger(user.Name)
 	w.Header().Set("Content-Type", "application/jrd+json")
 	json.NewEncoder(w).Encode(webfinger)
 }
 
 func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)[nameParam]
-	user, err := h.service.GetUserByName(name)
+	actor, err := h.cache.Get(fmt.Sprintf("actor-%s", name), models.Actor{})
 	if err != nil {
-		h.response.NotFound(w, err)
-		return
+		log.Println(fmt.Sprintf("no cache for actor-%s", name))
+		user, err := h.service.GetUserByName(name)
+		if err != nil {
+			h.response.NotFound(w, err)
+			return
+		}
+		actor = h.resource.GenerateActor(user.Name)
+		err = h.cache.Set(fmt.Sprintf("actor-%s", name), actor)
+		if err != nil {
+			log.Println(fmt.Sprintf("failed to cache actor-%s: %+v", name, actor))
+		}
 	}
-	actor := h.resource.GenerateActor(user.Name)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(actor)
 }

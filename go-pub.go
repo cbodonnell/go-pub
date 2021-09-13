@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/handlers"
 	"github.com/cheebz/go-pub/jwt"
@@ -46,8 +47,10 @@ func main() {
 	middle := middleware.NewActivityPubMiddleware(conf.Client, response, jwt)
 	// create resource generator
 	resource := resources.NewActivityPubResource(conf)
-	// create handler
-	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response)
+	// create cache layer
+	cache := cache.NewRedisCache(conf)
+	// create handler (TODO: Make an options struct??)
+	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response, cache)
 	if ENV == "dev" {
 		handler.AllowCORS([]string{conf.Client})
 	}

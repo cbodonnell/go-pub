@@ -36,6 +36,10 @@ var (
 		"JWT_KEY":              "secret",
 		"RSA_PUBLIC_KEY":       "public.pem",
 		"RSA_PRIVATE_KEY":      "private.pem",
+		"REDIS_ADDRESS":        "localhost:6379",
+		"REDIS_PASSWORD":       "",
+		"REDIS_DB":             0,
+		"REDIS_EXP_SECONDS":    3600,
 	}
 	configPaths = []string{
 		".",
@@ -50,16 +54,17 @@ type Configuration struct {
 	Port          int    `mapstructure:"PORT"`
 	LogFile       string `mapstructure:"LOG_FILE"`
 	Protocol      string
-	ServerName    string     `mapstructure:"SERVER_NAME"`
-	Auth          string     `mapstructure:"AUTH"`
-	Client        string     `mapstructure:"CLIENT"`
-	Endpoints     Endpoints  `mapstructure:",squash"`
-	SSLCert       string     `mapstructure:"SSL_CERT"`
-	SSLKey        string     `mapstructure:"SSL_KEY"`
-	Db            DataSource `mapstructure:",squash"`
-	JWTKey        string     `mapstructure:"JWT_KEY"`
-	RSAPublicKey  string     `mapstructure:"RSA_PUBLIC_KEY"`
-	RSAPrivateKey string     `mapstructure:"RSA_PRIVATE_KEY"`
+	ServerName    string      `mapstructure:"SERVER_NAME"`
+	Auth          string      `mapstructure:"AUTH"`
+	Client        string      `mapstructure:"CLIENT"`
+	Endpoints     Endpoints   `mapstructure:",squash"`
+	SSLCert       string      `mapstructure:"SSL_CERT"`
+	SSLKey        string      `mapstructure:"SSL_KEY"`
+	Db            DataSource  `mapstructure:",squash"`
+	JWTKey        string      `mapstructure:"JWT_KEY"`
+	RSAPublicKey  string      `mapstructure:"RSA_PUBLIC_KEY"`
+	RSAPrivateKey string      `mapstructure:"RSA_PRIVATE_KEY"`
+	Redis         RedisConfig `mapstructure:",squash"`
 }
 
 // DataSource struct
@@ -83,9 +88,12 @@ type DataSource struct {
 	Password string `mapstructure:"DB_PASSWORD"`
 }
 
-var (
-	C Configuration
-)
+type RedisConfig struct {
+	Address         string `mapstructure:"REDIS_ADDRESS"`
+	Password        string `mapstructure:"REDIS_PASSWORD"`
+	Db              int    `mapstructure:"REDIS_DB"`
+	RedisExpSeconds int    `mapstructure:"REDIS_EXP_SECONDS"`
+}
 
 // TODO: Have defaults for all config variables
 func ReadConfig(ENV string) (Configuration, error) {
@@ -121,7 +129,6 @@ func ReadConfig(ENV string) (Configuration, error) {
 	if err != nil {
 		return config, err
 	}
-	C = config
 	return config, nil
 }
 
