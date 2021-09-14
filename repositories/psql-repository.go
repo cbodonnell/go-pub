@@ -116,10 +116,11 @@ func (r *PSQLRepository) QueryInboxTotalItemsByUserName(name string) (int, error
 
 func (r *PSQLRepository) QueryInboxByUserName(name string) ([]models.Activity, error) {
 	var activities []models.Activity
-	r.cache.Get(fmt.Sprintf("outbox-%s", name), &activities)
+	r.cache.Get(fmt.Sprintf("inbox-%s", name), &activities)
 	if activities != nil {
 		return activities, nil
 	}
+	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("inbox-%s", name)))
 
 	sql := `SELECT act.*
 	FROM activities as act
