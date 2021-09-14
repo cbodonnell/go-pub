@@ -57,14 +57,14 @@ func main() {
 	}
 	r := handler.GetRouter()
 
+	// Run server
+	log.Println(fmt.Sprintf("Serving on port %d", conf.Port))
+
 	// Set log file
 	if conf.LogFile != "" {
 		logFile := logging.SetLogFile(conf.LogFile)
 		defer logFile.Close()
 	}
-
-	// Run server
-	log.Println(fmt.Sprintf("Serving on port %d", conf.Port))
 
 	// TLS
 	if conf.SSLCert == "" {
