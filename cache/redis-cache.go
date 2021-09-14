@@ -40,21 +40,21 @@ func (c *RedisCache) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (c *RedisCache) Get(key string, result interface{}) (interface{}, error) {
+func (c *RedisCache) Get(key string, pointer interface{}) (interface{}, error) {
 	value, err := c.client.Get(key).Result()
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal([]byte(value), &result)
+	err = json.Unmarshal([]byte(value), pointer)
 	if err != nil {
 		return nil, err
 	}
 	log.Println(fmt.Sprintf("got cached %s", key))
-	return result, nil
+	return pointer, nil
 }
 
-func (c *RedisCache) Del(key string) error {
-	_, err := c.client.Del(key).Result()
+func (c *RedisCache) Del(keys ...string) error {
+	_, err := c.client.Del(keys...).Result()
 	if err != nil {
 		return err
 	}

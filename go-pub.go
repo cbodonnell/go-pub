@@ -31,8 +31,11 @@ func main() {
 		log.Fatal("unable to read config")
 	}
 
+	// create cache layer
+	cache := cache.NewRedisCache(conf)
+	cache.FlushDB()
 	// create repository
-	repo := repositories.NewPSQLRepository(conf)
+	repo := repositories.NewPSQLRepository(conf, cache)
 	defer repo.Close()
 	// create federation worker
 	worker := workers.NewFederationWorker(conf, repo)
@@ -47,11 +50,8 @@ func main() {
 	middle := middleware.NewActivityPubMiddleware(conf.Client, response, jwt)
 	// create resource generator
 	resource := resources.NewActivityPubResource(conf)
-	// create cache layer
-	cache := cache.NewRedisCache(conf)
-	cache.FlushDB()
 	// create handler (TODO: Make an options struct??)
-	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response, cache)
+	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response)
 	if ENV == "dev" {
 		handler.AllowCORS([]string{conf.Client})
 	}
