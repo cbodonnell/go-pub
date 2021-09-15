@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/cheebz/go-pub/config"
@@ -58,6 +59,7 @@ func (c *RedisCache) Del(keys ...string) error {
 	if err != nil {
 		return err
 	}
+	log.Println(fmt.Sprintf("deleted cached %s", strings.Join(keys, " ")))
 	return nil
 }
 
