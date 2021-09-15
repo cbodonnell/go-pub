@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"io"
+	"net/url"
 )
 
 func ParseLimitedPayload(r io.Reader, n int64) ([]byte, error) {
@@ -13,6 +14,14 @@ func ParseLimitedPayload(r io.Reader, n int64) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func IsFromHost(rawurl string, host string) bool {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return false
+	}
+	return u.Host == host
 }
 
 // func MakeGenericArray(typed interface{}) ([]interface{}, error) {

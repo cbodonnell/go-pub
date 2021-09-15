@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/cheebz/arb"
 	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/models"
+	"github.com/cheebz/go-pub/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -866,5 +868,11 @@ func (r *PSQLRepository) AddActivityTo(activityIRI string, recipient string) err
 	if err != nil {
 		return err
 	}
+	// If local clear inbox cache of user
+	if utils.IsFromHost(recipient, r.conf.ServerName) {
+		name := strings.TrimPrefix(recipient, fmt.Sprintf("%s://%s/%s/", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users))
+		return r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
+	}
+	//
 	return nil
 }
