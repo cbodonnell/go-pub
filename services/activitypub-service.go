@@ -126,7 +126,7 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 	recipient := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	switch activityType {
 	case "Create":
-		_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), recipient)
+		_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
 		}
@@ -134,7 +134,7 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 		if objectIRI.String() != recipient {
 			return activityArb, errors.New("wrong inbox")
 		}
-		_, err = s.repo.CreateInboxReferenceActivity(activityArb, recipient, actorIRI.String(), recipient)
+		_, err = s.repo.CreateInboxReferenceActivity(activityArb, recipient, actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
 		}
@@ -143,13 +143,13 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 			return activityArb, err
 		}
 		responseArb["actor"] = recipient
-		responseArb, err = s.repo.CreateOutboxReferenceActivity(responseArb)
+		responseArb, err = s.repo.CreateOutboxReferenceActivity(responseArb, name)
 		if err != nil {
 			return activityArb, err
 		}
 		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
 	case "Undo", "Accept":
-		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), recipient)
+		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
 		}
@@ -173,17 +173,17 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 			return activityArb, err
 		}
 		objectArb["attributedTo"] = actor
-		activityArb, err = s.repo.CreateOutboxActivity(activityArb, objectArb)
+		activityArb, err = s.repo.CreateOutboxActivity(activityArb, objectArb, name)
 		if err != nil {
 			return activityArb, err
 		}
 	case "Like":
-		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb)
+		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err
 		}
 	case "Follow":
-		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb)
+		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err
 		}
@@ -203,14 +203,14 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 				return activityArb, err
 			}
 			responseArb["actor"] = objectIRI.String()
-			responseArb, err = s.repo.CreateOutboxReferenceActivity(responseArb)
+			responseArb, err = s.repo.CreateOutboxReferenceActivity(responseArb, name)
 			if err != nil {
 				return activityArb, err
 			}
 			s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actor, Activity: responseArb}
 		}
 	case "Undo":
-		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb)
+		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err
 		}

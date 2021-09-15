@@ -592,7 +592,7 @@ func (r *PSQLRepository) QueryObject(id int) (models.Object, error) {
 }
 
 // Create a new inbox Activity with basic details
-func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, recipient string) (arb.Arb, error) {
+func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, name string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -626,9 +626,10 @@ func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.
 			return activityArb, err
 		}
 	}
-	if !r.ActivityToExists(activityIRI, recipient) {
+	iri := fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name)
+	if !r.ActivityToExists(activityIRI, iri) {
 		sql := `INSERT INTO activities_to (activity_id, iri) VALUES ($1, $2);`
-		_, err = tx.Exec(ctx, sql, activity_id, recipient)
+		_, err = tx.Exec(ctx, sql, activity_id, iri)
 		if err != nil {
 			tx.Rollback(ctx)
 			return activityArb, err
@@ -638,16 +639,16 @@ func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s", recipient), fmt.Sprintf("inbox-totalItems-%s", recipient))
+	err = r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", recipient), fmt.Sprintf("inbox-totalItems-%s", recipient)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
 }
 
 // Create a new inbox Activity with basic details
-func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, object string, actor string, recipient string) (arb.Arb, error) {
+func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, object string, actor string, name string) (arb.Arb, error) {
 	// activityIRI, _ := activityArb.GetString("id")
 	ctx := context.Background()
 	tx, err := r.db.Begin(ctx)
@@ -676,9 +677,10 @@ func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, objec
 			return activityArb, err
 		}
 	}
-	if !r.ActivityToExists(activityIRI, recipient) {
+	iri := fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name)
+	if !r.ActivityToExists(activityIRI, iri) {
 		sql := `INSERT INTO activities_to (activity_id, iri) VALUES ($1,$2);`
-		_, err = tx.Exec(ctx, sql, activity_id, recipient)
+		_, err = tx.Exec(ctx, sql, activity_id, iri)
 		if err != nil {
 			tx.Rollback(ctx)
 			return activityArb, err
@@ -688,9 +690,9 @@ func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, objec
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s", recipient), fmt.Sprintf("inbox-totalItems-%s", recipient))
+	err = r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", recipient), fmt.Sprintf("inbox-totalItems-%s", recipient)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
@@ -718,7 +720,7 @@ func (r *PSQLRepository) queryActivityID(iri string) (int, error) {
 	return activity_id, nil
 }
 
-func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb.Arb) (arb.Arb, error) {
+func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, name string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -776,16 +778,16 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("outbox-%s", activityArb["actor"]), fmt.Sprintf("outbox-totalItems-%s", activityArb["actor"]))
+	err = r.cache.Del(fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", activityArb["actor"]), fmt.Sprintf("outbox-totalItems-%s", activityArb["actor"])))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
 }
 
 // Create a new outbox Activity with full details
-func (r *PSQLRepository) CreateOutboxReferenceActivity(activityArb arb.Arb) (arb.Arb, error) {
+func (r *PSQLRepository) CreateOutboxReferenceActivity(activityArb arb.Arb, name string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -833,9 +835,9 @@ func (r *PSQLRepository) CreateOutboxReferenceActivity(activityArb arb.Arb) (arb
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("outbox-%s", activityArb["actor"]), fmt.Sprintf("outbox-totalItems-%s", activityArb["actor"]))
+	err = r.cache.Del(fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", activityArb["actor"]), fmt.Sprintf("outbox-totalItems-%s", activityArb["actor"])))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil

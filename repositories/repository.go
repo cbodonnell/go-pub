@@ -22,10 +22,10 @@ type Repository interface {
 	QueryLikedByUserName(name string) ([]models.Object, error)
 	QueryActivity(ID int) (models.Activity, error)
 	QueryObject(ID int) (models.Object, error)
-	CreateInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, recipient string) (arb.Arb, error)
-	CreateInboxReferenceActivity(activityArb arb.Arb, object string, actor string, recipient string) (arb.Arb, error)
-	CreateOutboxActivity(activityArb arb.Arb, objectArb arb.Arb) (arb.Arb, error)
-	CreateOutboxReferenceActivity(activityArb arb.Arb) (arb.Arb, error)
+	CreateInboxActivity(activityArb arb.Arb, objectArb arb.Arb, actor string, name string) (arb.Arb, error)
+	CreateInboxReferenceActivity(activityArb arb.Arb, object string, actor string, name string) (arb.Arb, error)
+	CreateOutboxActivity(activityArb arb.Arb, objectArb arb.Arb, name string) (arb.Arb, error)
+	CreateOutboxReferenceActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	ActivityToExists(activityIRI string, recipientIRI string) bool
 	AddActivityTo(activityIRI string, recipient string) error
 }
