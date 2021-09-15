@@ -33,7 +33,10 @@ func main() {
 
 	// create cache layer
 	cache := cache.NewRedisCache(conf)
-	cache.FlushDB()
+	err = cache.FlushDB()
+	if err != nil {
+		log.Println(err)
+	}
 	// create repository
 	repo := repositories.NewPSQLRepository(conf, cache)
 	defer repo.Close()
