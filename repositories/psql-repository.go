@@ -29,7 +29,6 @@ func NewPSQLRepository(_conf config.Configuration, _cache cache.Cache) Repositor
 	}
 }
 
-// TODO: Make this less database dependent
 func connectDb(s config.DataSource) *pgxpool.Pool {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -708,6 +707,9 @@ func (r *PSQLRepository) queryObjectID(iri string) (int, error) {
 	if err != nil {
 		return object_id, err
 	}
+	if object_id == 0 {
+		return object_id, fmt.Errorf("no object with iri %s", iri)
+	}
 	return object_id, nil
 }
 
@@ -718,6 +720,9 @@ func (r *PSQLRepository) queryActivityID(iri string) (int, error) {
 	err := r.db.QueryRow(context.Background(), sql, iri).Scan(&activity_id)
 	if err != nil {
 		return activity_id, err
+	}
+	if activity_id == 0 {
+		return activity_id, fmt.Errorf("no activity with iri %s", iri)
 	}
 	return activity_id, nil
 }
@@ -873,6 +878,5 @@ func (r *PSQLRepository) AddActivityTo(activityIRI string, recipient string) err
 		name := strings.TrimPrefix(recipient, fmt.Sprintf("%s://%s/%s/", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users))
 		return r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	}
-	//
 	return nil
 }

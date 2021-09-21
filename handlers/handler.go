@@ -5,7 +5,7 @@ import (
 )
 
 type Handler interface {
-	GetRouter() http.Handler // TODO: Make more generic once able to
+	GetRouter() http.Handler
 	AllowCORS(allowedOrigins []string)
 	GetWebFinger(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)

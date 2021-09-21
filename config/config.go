@@ -95,7 +95,6 @@ type RedisConfig struct {
 	RedisExpSeconds int    `mapstructure:"REDIS_EXP_SECONDS"`
 }
 
-// TODO: Have defaults for all config variables
 func ReadConfig(ENV string) (Configuration, error) {
 	for k, v := range defaults {
 		viper.SetDefault(k, v)

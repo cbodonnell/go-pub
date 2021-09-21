@@ -84,7 +84,6 @@ func (h *MuxHandler) setupRoutes() {
 	// r.Use(jwtUsernameMiddleware)
 }
 
-// TODO: Change this to return only what is needed for http.ListenAndServe(...)
 func (h *MuxHandler) GetRouter() http.Handler {
 	return h.router
 }
