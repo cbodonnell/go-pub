@@ -671,7 +671,6 @@ func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, objec
 	if err != nil {
 		sql := `INSERT INTO activities (type, actor, object_id, iri)
 		VALUES ($1, $2, $3, $4) RETURNING id;`
-		var activity_id int
 		err = tx.QueryRow(ctx, sql, activityArb["type"], actor, object_id, activityArb["id"]).Scan(&activity_id)
 		if err != nil {
 			tx.Rollback(ctx)
@@ -707,9 +706,6 @@ func (r *PSQLRepository) queryObjectID(iri string) (int, error) {
 	if err != nil {
 		return object_id, err
 	}
-	if object_id == 0 {
-		return object_id, fmt.Errorf("no object with iri %s", iri)
-	}
 	return object_id, nil
 }
 
@@ -720,9 +716,6 @@ func (r *PSQLRepository) queryActivityID(iri string) (int, error) {
 	err := r.db.QueryRow(context.Background(), sql, iri).Scan(&activity_id)
 	if err != nil {
 		return activity_id, err
-	}
-	if activity_id == 0 {
-		return activity_id, fmt.Errorf("no activity with iri %s", iri)
 	}
 	return activity_id, nil
 }
