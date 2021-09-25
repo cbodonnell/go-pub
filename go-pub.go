@@ -22,13 +22,9 @@ import (
 func main() {
 	// Get configuration
 	ENV := os.Getenv("ENV")
-	if ENV == "" {
-		ENV = "dev"
-	}
-	log.Println(fmt.Sprintf("Running in ENV: %s", ENV))
 	conf, err := config.ReadConfig(ENV)
 	if err != nil {
-		log.Fatal("unable to read config")
+		log.Fatal(err)
 	}
 
 	// create cache layer

@@ -99,17 +99,22 @@ func ReadConfig(ENV string) (Configuration, error) {
 	for k, v := range defaults {
 		viper.SetDefault(k, v)
 	}
-	viper.SetConfigName(ENV)
-	for _, p := range configPaths {
-		viper.AddConfigPath(p)
-	}
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Println(err)
+	if ENV != "" {
+		log.Printf("Running in ENV: %s", ENV)
+		viper.SetConfigName(ENV)
+		for _, p := range configPaths {
+			viper.AddConfigPath(p)
+		}
+		err := viper.ReadInConfig()
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		log.Println("No ENV specified. Falling back to environment variables and defaults.")
 	}
 	viper.AutomaticEnv()
 	var config Configuration
-	err = viper.Unmarshal(&config)
+	err := viper.Unmarshal(&config)
 	if err != nil {
 		return config, err
 	}
