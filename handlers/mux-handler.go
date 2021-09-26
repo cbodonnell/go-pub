@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -384,6 +383,6 @@ func (h *MuxHandler) PostOutbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MuxHandler) SinkHandler(w http.ResponseWriter, r *http.Request) {
-	h.response.NotFound(w, errors.New("endpoint does not exist"))
+	h.response.NotFound(w, fmt.Errorf("endpoint %s does not exist", r.URL))
 	return
 }

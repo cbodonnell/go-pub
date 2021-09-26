@@ -25,7 +25,7 @@ func NewRedisCache(_conf config.Configuration) Cache {
 
 func createClient(conf config.RedisConfig) *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:     conf.Address,
+		Addr:     fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Password: conf.Password,
 		DB:       conf.Db,
 	})

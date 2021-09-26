@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  pub:
+    build: .
+    image: cheebz/go-pub
+    ports:
+      - 127.0.0.1:${PORT}:${PORT}
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - AUTH=http://go-auth_auth_1:8082/auth/ # Use hostname set for go-auth container
+      - RSA_PUBLIC_KEY=/etc/rsa/public.pem
+      - RSA_PRIVATE_KEY=/etc/rsa/private.pem
+    env_file:
+      - ${ENV}.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./${RSA_PUBLIC_KEY}:/etc/rsa/public.pem
+      - ./${RSA_PRIVATE_KEY}:/etc/rsa/private.pem
+    networks:
+      - default
+      - auth_net
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./postgres-data/:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:latest
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes: 
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+
+volumes:
+  postgres-data:
+
+networks:
+  auth_net:
+    driver: bridge
+    name: auth_net

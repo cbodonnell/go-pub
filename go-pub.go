@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
@@ -51,8 +52,8 @@ func main() {
 	resource := resources.NewActivityPubResource(conf)
 	// create handler (TODO: Make an options struct??)
 	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response)
-	if ENV == "dev" {
-		handler.AllowCORS([]string{conf.Client})
+	if conf.AllowedOrigins != "" {
+		handler.AllowCORS(strings.Split(conf.AllowedOrigins, ","))
 	}
 	r := handler.GetRouter()
 

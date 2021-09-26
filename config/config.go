@@ -12,34 +12,36 @@ import (
 
 var (
 	defaults = map[string]interface{}{
-		"DEBUG":                true,
-		"PORT":                 80,
-		"LOG_FILE":             "",
-		"SERVER_NAME":          "localhost",
-		"AUTH":                 "http://localhost:8080/auth",
-		"CLIENT":               "http://localhost:3000",
-		"ENDPOINTS_USERS":      "users",
-		"ENDPOINTS_ACTIVITIES": "activities",
-		"ENDPOINTS_OBJECTS":    "objects",
-		"ENDPOINTS_INBOX":      "inbox",
-		"ENDPOINTS_OUTBOX":     "outbox",
-		"ENDPOINTS_FOLLOWING":  "following",
-		"ENDPOINTS_FOLLOWERS":  "followers",
-		"ENDPOINTS_LIKED":      "liked",
-		"SSL_CERT":             "",
-		"SSL_KEY":              "",
-		"DB_HOST":              "host",
-		"DB_PORT":              5432,
-		"DB_NAME":              "database",
-		"DB_USER":              "user",
-		"DB_PASSWORD":          "password",
-		"JWT_KEY":              "secret",
-		"RSA_PUBLIC_KEY":       "public.pem",
-		"RSA_PRIVATE_KEY":      "private.pem",
-		"REDIS_ADDRESS":        "localhost:6379",
-		"REDIS_PASSWORD":       "",
-		"REDIS_DB":             0,
-		"REDIS_EXP_SECONDS":    3600,
+		"DEBUG":               true,
+		"PORT":                80,
+		"LOG_FILE":            "",
+		"SERVER_NAME":         "localhost",
+		"AUTH":                "http://localhost:8080/auth",
+		"CLIENT":              "http://localhost:3000",
+		"ENDPOINT_USERS":      "users",
+		"ENDPOINT_ACTIVITIES": "activities",
+		"ENDPOINT_OBJECTS":    "objects",
+		"ENDPOINT_INBOX":      "inbox",
+		"ENDPOINT_OUTBOX":     "outbox",
+		"ENDPOINT_FOLLOWING":  "following",
+		"ENDPOINT_FOLLOWERS":  "followers",
+		"ENDPOINT_LIKED":      "liked",
+		"SSL_CERT":            "",
+		"SSL_KEY":             "",
+		"DB_HOST":             "host",
+		"DB_PORT":             5432,
+		"DB_NAME":             "database",
+		"DB_USER":             "user",
+		"DB_PASSWORD":         "password",
+		"JWT_KEY":             "secret",
+		"RSA_PUBLIC_KEY":      "public.pem",
+		"RSA_PRIVATE_KEY":     "private.pem",
+		"REDIS_HOST":          "localhost",
+		"REDIS_PORT":          6379,
+		"REDIS_PASSWORD":      "",
+		"REDIS_DB":            0,
+		"REDIS_EXP_SECONDS":   3600,
+		"ALLOWED_ORIGINS":     "",
 	}
 	configPaths = []string{
 		".",
@@ -50,21 +52,22 @@ var (
 
 // Configuration struct
 type Configuration struct {
-	Debug         bool   `mapstructure:"DEBUG"`
-	Port          int    `mapstructure:"PORT"`
-	LogFile       string `mapstructure:"LOG_FILE"`
-	Protocol      string
-	ServerName    string      `mapstructure:"SERVER_NAME"`
-	Auth          string      `mapstructure:"AUTH"`
-	Client        string      `mapstructure:"CLIENT"`
-	Endpoints     Endpoints   `mapstructure:",squash"`
-	SSLCert       string      `mapstructure:"SSL_CERT"`
-	SSLKey        string      `mapstructure:"SSL_KEY"`
-	Db            DataSource  `mapstructure:",squash"`
-	JWTKey        string      `mapstructure:"JWT_KEY"`
-	RSAPublicKey  string      `mapstructure:"RSA_PUBLIC_KEY"`
-	RSAPrivateKey string      `mapstructure:"RSA_PRIVATE_KEY"`
-	Redis         RedisConfig `mapstructure:",squash"`
+	Debug          bool   `mapstructure:"DEBUG"`
+	Port           int    `mapstructure:"PORT"`
+	LogFile        string `mapstructure:"LOG_FILE"`
+	Protocol       string
+	ServerName     string      `mapstructure:"SERVER_NAME"`
+	Auth           string      `mapstructure:"AUTH"`
+	Client         string      `mapstructure:"CLIENT"`
+	Endpoints      Endpoints   `mapstructure:",squash"`
+	SSLCert        string      `mapstructure:"SSL_CERT"`
+	SSLKey         string      `mapstructure:"SSL_KEY"`
+	Db             DataSource  `mapstructure:",squash"`
+	JWTKey         string      `mapstructure:"JWT_KEY"`
+	RSAPublicKey   string      `mapstructure:"RSA_PUBLIC_KEY"`
+	RSAPrivateKey  string      `mapstructure:"RSA_PRIVATE_KEY"`
+	Redis          RedisConfig `mapstructure:",squash"`
+	AllowedOrigins string      `mapstructure:"ALLOWED_ORIGINS"`
 }
 
 // DataSource struct
@@ -89,7 +92,8 @@ type DataSource struct {
 }
 
 type RedisConfig struct {
-	Address         string `mapstructure:"REDIS_ADDRESS"`
+	Host            string `mapstructure:"REDIS_HOST"`
+	Port            int    `mapstructure:"REDIS_PORT"`
 	Password        string `mapstructure:"REDIS_PASSWORD"`
 	Db              int    `mapstructure:"REDIS_DB"`
 	RedisExpSeconds int    `mapstructure:"REDIS_EXP_SECONDS"`
