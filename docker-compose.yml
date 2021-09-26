@@ -8,7 +8,7 @@ services:
     environment:
       - DB_HOST=postgres
       - REDIS_HOST=redis
-      - AUTH=http://go-auth_auth_1:8082/auth/ # Use hostname set for go-auth container
+      - AUTH=http://auth:8082/auth/ # Use network hostname for go-auth container
       - RSA_PUBLIC_KEY=/etc/rsa/public.pem
       - RSA_PRIVATE_KEY=/etc/rsa/private.pem
     env_file:
