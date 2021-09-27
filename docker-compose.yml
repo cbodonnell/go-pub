@@ -8,7 +8,7 @@ services:
     environment:
       - DB_HOST=postgres
       - REDIS_HOST=redis
-      - AUTH=http://auth:8082/auth/ # Use network hostname for go-auth container
+      - AUTH=${AUTH}
       - RSA_PUBLIC_KEY=/etc/rsa/public.pem
       - RSA_PRIVATE_KEY=/etc/rsa/private.pem
     env_file:
@@ -17,8 +17,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./${RSA_PUBLIC_KEY}:/etc/rsa/public.pem
-      - ./${RSA_PRIVATE_KEY}:/etc/rsa/private.pem
+      - ${RSA_PUBLIC_KEY}:/etc/rsa/public.pem
+      - ${RSA_PRIVATE_KEY}:/etc/rsa/private.pem
     networks:
       - default
       - auth_net
@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Can this be baked into either image?
       - ./postgres-data/:/var/lib/postgresql/data/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
@@ -38,7 +38,7 @@ services:
       retries: 5
   redis:
     image: redis:latest
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} # Can this be made optional?
     volumes: 
       - ./redis.conf:/usr/local/etc/redis/redis.conf
 
