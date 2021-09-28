@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"regexp"
 
@@ -58,8 +59,13 @@ func (m *ActivityPubMiddleware) AcceptMiddleware(h http.Handler) http.Handler {
 		if err != nil {
 			// if not requesting activity serve client app
 			if isValidURL(m.client) {
-				// if url append request URI and redirect
-				http.Redirect(w, r, m.client+r.URL.RequestURI(), http.StatusSeeOther)
+				origin, _ := url.Parse(m.client)
+				director := func(req *http.Request) {
+					req.URL.Scheme = origin.Scheme
+					req.URL.Host = origin.Host
+				}
+				proxy := &httputil.ReverseProxy{Director: director}
+				proxy.ServeHTTP(w, r)
 				return
 			} else {
 				// else try and serve static site
