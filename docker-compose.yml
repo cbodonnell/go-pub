@@ -26,6 +26,7 @@ services:
       - default
       - pub_net
       - auth_net
+    restart: unless-stopped
   postgres:
     image: postgres:latest
     environment:
@@ -40,9 +41,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
   redis:
     image: redis:latest
     command: redis-server --requirepass ${REDIS_PASSWORD} # Can this be made optional?
+    restart: unless-stopped
 
 volumes:
   postgres-data:
