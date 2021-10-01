@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DIR="/etc/go-pub"
-        ENV_NAME="prod"
+        ENV="prod"
     }
     stages {
         stage('build') {
@@ -20,8 +20,7 @@ pipeline {
             steps {
                 echo 'deploying...'
                 sh 'cd $DIR'
-                sh 'export ENV=$DIR/$ENV_NAME'
-                sh 'sudo ENV=${ENV} sh ./scripts/docker_start.sh'
+                sh 'sudo ENV=$ENV sh ./scripts/docker_start.sh'
             }
         }
     }
