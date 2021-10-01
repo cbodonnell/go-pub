@@ -8,9 +8,13 @@ RUN openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/go-pub/key.pem -out /etc
 RUN mkdir /app
 WORKDIR /app
 
-COPY . .
+COPY go.mod go.mod
+COPY go.sum go.sum
 
 RUN go get -d -v ./...
+
+COPY . .
+
 RUN go build
 
 # Production stage
