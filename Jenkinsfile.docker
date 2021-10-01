@@ -18,7 +18,7 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying...'
-                sh 'sudo sh ./scripts/docker_start.sh'
+                sh 'sudo ENV=$ENV sh ./scripts/docker_start.sh'
             }
         }
     }
