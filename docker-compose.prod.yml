@@ -14,6 +14,7 @@ services:
       - RSA_PRIVATE_KEY=/etc/rsa/private.pem
       - SSL_CERT=./certs/cert.pem
       - SSL_KEY=./certs/key.pem
+      - LOG_FILE=/var/log/go-pub.log
     env_file:
       - ${ENV}.env
     depends_on:
@@ -22,6 +23,7 @@ services:
     volumes:
       - ${RSA_PUBLIC_KEY}:/etc/rsa/public.pem
       - ${RSA_PRIVATE_KEY}:/etc/rsa/private.pem
+      - ${LOG_FILE}:/var/log/go-pub.log
     networks:
       - default
       - pub_net
