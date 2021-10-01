@@ -8,7 +8,7 @@ pipeline {
         stage('build') {
             steps {
                 echo 'building...'
-                sh 'sudo sh ./scripts/docker_build.sh'
+                sh 'sudo docker build -t cheebz/go-pub -f Dockerfile.prod .'
             }
         }
         stage('test') {
@@ -19,8 +19,8 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying...'
-                sh 'cd $DIR'
-                sh 'sudo ENV=$ENV sh ./scripts/docker_start.sh'
+                sh 'sudo docker-compose down'
+                sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml up -d'
             }
         }
     }
