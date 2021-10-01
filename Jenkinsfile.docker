@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        ENV="prod"
+        ENV="/etc/go-pub/prod"
     }
     stages {
         stage('build') {
