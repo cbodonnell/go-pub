@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    environment {
+        ENV="prod"
+    }
+    stages {
+        stage('build') {
+            steps {
+                echo 'building...'
+                sh 'sudo sh ./scripts/docker_build.sh'
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'testing...'
+            }
+        }
+        stage('deploy') {
+            steps {
+                echo 'deploying...'
+                sh 'sudo sh ./scripts/docker_start.sh'
+            }
+        }
+    }
+    post {
+        cleanup {
+            deleteDir()
+        }
+    }
+}
