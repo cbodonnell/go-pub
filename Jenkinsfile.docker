@@ -18,6 +18,7 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying...'
+                sh 'export ENV=$ENV'
                 sh 'sudo ENV=$ENV sh ./scripts/docker_start.sh'
             }
         }
