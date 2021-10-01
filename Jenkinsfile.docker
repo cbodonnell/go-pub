@@ -21,7 +21,7 @@ pipeline {
                 echo 'deploying...'
                 sh 'cd $DIR'
                 sh 'export ENV=$DIR/$ENV_NAME'
-                sh 'sudo ENV=$ENV sh ./scripts/docker_start.sh'
+                sh 'sudo ENV=${ENV} sh ./scripts/docker_start.sh'
             }
         }
     }

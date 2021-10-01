@@ -8,9 +8,10 @@ FROM golang:1-alpine as builder
 RUN mkdir /app
 WORKDIR /app
 
-COPY . .
+COPY go.mod go.sum ./
+RUN go mod download
 
-RUN go get -d -v ./...
+COPY . ./
 RUN go build
 
 # Production stage
