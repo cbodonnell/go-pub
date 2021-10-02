@@ -18,7 +18,13 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying...'
-                sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml down'
+                script {
+                    try {
+                        sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml down'
+                    } catch (err) {
+                        echo err.getMessage()
+                    }
+                }
                 sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml up -d'
             }
         }
