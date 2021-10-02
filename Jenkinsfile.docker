@@ -1,8 +1,7 @@
 pipeline {
     agent any
     environment {
-        DIR="/etc/go-pub"
-        ENV="prod"
+        ENV="/etc/go-pub/prod"
     }
     stages {
         stage('build') {
@@ -19,8 +18,8 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying...'
-                sh 'sudo ENV=$DIR/$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml down'
-                sh 'sudo ENV=$DIR/$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml up -d'
+                sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml down'
+                sh 'sudo ENV=$ENV docker-compose --env-file="$ENV.env" -f docker-compose.prod.yml up -d'
             }
         }
     }
