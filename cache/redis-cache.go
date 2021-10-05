@@ -54,12 +54,20 @@ func (c *RedisCache) Get(key string, pointer interface{}) (interface{}, error) {
 	return pointer, nil
 }
 
-func (c *RedisCache) Del(keys ...string) error {
-	_, err := c.client.Del(keys...).Result()
-	if err != nil {
-		return err
+func (c *RedisCache) Del(patterns ...string) error {
+	for _, pattern := range patterns {
+		keys, err := c.client.Keys(pattern).Result()
+		if err != nil {
+			return err
+		}
+		if len(keys) > 0 {
+			_, err = c.client.Del(keys...).Result()
+			if err != nil {
+				return err
+			}
+		}
 	}
-	log.Println(fmt.Sprintf("deleted cached %s", strings.Join(keys, " ")))
+	log.Println(fmt.Sprintf("deleted cached %s", strings.Join(patterns, " ")))
 	return nil
 }
 

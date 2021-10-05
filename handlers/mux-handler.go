@@ -27,7 +27,8 @@ type MuxHandler struct {
 }
 
 var (
-	nameParam = "name"
+	nameParam  = "name"
+	pageLength = 25
 )
 
 func NewMuxHandler(_endpoints config.Endpoints, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
@@ -124,7 +125,7 @@ func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)[nameParam]
 	page := r.FormValue("page")
-	if page != "true" {
+	if page == "" {
 		totalItems, err := h.service.GetInboxTotalItemsByUserName(name)
 		if err != nil {
 			h.response.InternalServerError(w, err)
@@ -135,7 +136,12 @@ func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(inbox)
 		return
 	}
-	activities, err := h.service.GetInboxByUserName(name)
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	activities, err := h.service.GetInboxByUserName(name, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -144,7 +150,7 @@ func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range activities {
 		orderedItems[i] = activity
 	}
-	inboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Inbox, orderedItems)
+	inboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Inbox, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(inboxPage)
 }
@@ -157,7 +163,7 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := r.FormValue("page")
-	if page != "true" {
+	if page == "" {
 		totalItems, err := h.service.GetOutboxTotalItemsByUserName(user.Name)
 		if err != nil {
 			h.response.InternalServerError(w, err)
@@ -168,7 +174,12 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(outbox)
 		return
 	}
-	activities, err := h.service.GetOutboxByUserName(user.Name)
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	activities, err := h.service.GetOutboxByUserName(user.Name, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -177,7 +188,7 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range activities {
 		orderedItems[i] = activity
 	}
-	outboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Outbox, orderedItems)
+	outboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Outbox, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(outboxPage)
 }
@@ -190,7 +201,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := r.FormValue("page")
-	if page != "true" {
+	if page == "" {
 		totalItems, err := h.service.GetFollowingTotalItemsByUserName(user.Name)
 		if err != nil {
 			h.response.InternalServerError(w, err)
@@ -201,7 +212,12 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(following)
 		return
 	}
-	following, err := h.service.GetFollowingByUserName(user.Name)
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	following, err := h.service.GetFollowingByUserName(user.Name, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -210,7 +226,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range following {
 		orderedItems[i] = actor
 	}
-	followingPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Following, orderedItems)
+	followingPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Following, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followingPage)
 }
@@ -223,7 +239,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := r.FormValue("page")
-	if page != "true" {
+	if page == "" {
 		totalItems, err := h.service.GetFollowersTotalItemsByUserName(user.Name)
 		if err != nil {
 			h.response.InternalServerError(w, err)
@@ -234,7 +250,12 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(followers)
 		return
 	}
-	followers, err := h.service.GetFollowersByUserName(user.Name)
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	followers, err := h.service.GetFollowersByUserName(user.Name, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -243,7 +264,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range followers {
 		orderedItems[i] = actor
 	}
-	followersPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Followers, orderedItems)
+	followersPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Followers, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followersPage)
 }
@@ -256,7 +277,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := r.FormValue("page")
-	if page != "true" {
+	if page == "" {
 		totalItems, err := h.service.GetLikedTotalItemsByUserName(user.Name)
 		if err != nil {
 			h.response.InternalServerError(w, err)
@@ -267,7 +288,12 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(liked)
 		return
 	}
-	liked, err := h.service.GetLikedByUserName(user.Name)
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	liked, err := h.service.GetLikedByUserName(user.Name, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -276,7 +302,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range liked {
 		orderedItems[i] = activity
 	}
-	likedPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Liked, orderedItems)
+	likedPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Liked, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(likedPage)
 }

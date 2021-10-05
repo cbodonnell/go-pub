@@ -54,40 +54,40 @@ func (s *ActivityPubService) GetInboxTotalItemsByUserName(name string) (int, err
 	return s.repo.QueryInboxTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetInboxByUserName(name string) ([]models.Activity, error) {
-	return s.repo.QueryInboxByUserName(name)
+func (s *ActivityPubService) GetInboxByUserName(name string, pageNum int) ([]models.Activity, error) {
+	return s.repo.QueryInboxByUserName(name, pageNum)
 }
 
 func (s *ActivityPubService) GetOutboxTotalItemsByUserName(name string) (int, error) {
 	return s.repo.QueryOutboxTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetOutboxByUserName(name string) ([]models.Activity, error) {
-	return s.repo.QueryOutboxByUserName(name)
+func (s *ActivityPubService) GetOutboxByUserName(name string, pageNum int) ([]models.Activity, error) {
+	return s.repo.QueryOutboxByUserName(name, pageNum)
 }
 
 func (s *ActivityPubService) GetFollowersTotalItemsByUserName(name string) (int, error) {
 	return s.repo.QueryFollowersTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetFollowersByUserName(name string) ([]string, error) {
-	return s.repo.QueryFollowersByUserName(name)
+func (s *ActivityPubService) GetFollowersByUserName(name string, pageNum int) ([]string, error) {
+	return s.repo.QueryFollowersByUserName(name, pageNum)
 }
 
 func (s *ActivityPubService) GetFollowingTotalItemsByUserName(name string) (int, error) {
 	return s.repo.QueryFollowingTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetFollowingByUserName(name string) ([]string, error) {
-	return s.repo.QueryFollowingByUserName(name)
+func (s *ActivityPubService) GetFollowingByUserName(name string, pageNum int) ([]string, error) {
+	return s.repo.QueryFollowingByUserName(name, pageNum)
 }
 
 func (s *ActivityPubService) GetLikedTotalItemsByUserName(name string) (int, error) {
 	return s.repo.QueryLikedTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetLikedByUserName(name string) ([]models.Object, error) {
-	return s.repo.QueryLikedByUserName(name)
+func (s *ActivityPubService) GetLikedByUserName(name string, pageNum int) ([]models.Object, error) {
+	return s.repo.QueryLikedByUserName(name, pageNum)
 }
 
 func (s *ActivityPubService) GetActivity(ID int) (models.Activity, error) {

@@ -163,6 +163,8 @@ type OrderedCollectionPage struct {
 	Object
 	PartOf       string        `json:"partOf"`
 	OrderedItems []interface{} `json:"orderedItems"`
+	Next         string        `json:"next,omitempty"`
+	Prev         string        `json:"prev,omitempty"`
 }
 
 // PostActivityResource struct

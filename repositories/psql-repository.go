@@ -115,22 +115,26 @@ func (r *PSQLRepository) QueryInboxTotalItemsByUserName(name string) (int, error
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryInboxByUserName(name string) ([]models.Activity, error) {
+func (r *PSQLRepository) QueryInboxByUserName(name string, pageNum int) ([]models.Activity, error) {
 	var activities []models.Activity
-	r.cache.Get(fmt.Sprintf("inbox-%s", name), &activities)
+	r.cache.Get(fmt.Sprintf("inbox-%s-%d", name, pageNum), &activities)
 	if activities != nil {
 		return activities, nil
 	}
-	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("inbox-%s", name)))
+	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("inbox-%s-%d", name, pageNum)))
 
 	sql := `SELECT act.*
 	FROM activities as act
 	JOIN activities_to AS act_to ON act_to.activity_id = act.id
 	WHERE act_to.iri = $1
-	ORDER BY id DESC`
+	ORDER BY id DESC
+	OFFSET $2
+	LIMIT $3`
 
 	rows, err := r.db.Query(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
 	)
 	if err != nil {
 		return nil, err
@@ -172,9 +176,9 @@ func (r *PSQLRepository) QueryInboxByUserName(name string) ([]models.Activity, e
 		return activities, err
 	}
 
-	err = r.cache.Set(fmt.Sprintf("inbox-%s", name), activities)
+	err = r.cache.Set(fmt.Sprintf("inbox-%s-%d", name, pageNum), activities)
 	if err != nil {
-		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("inbox-%s", name)))
+		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("inbox-%s-%d", name, pageNum)))
 	}
 
 	return activities, nil
@@ -206,21 +210,25 @@ func (r *PSQLRepository) QueryOutboxTotalItemsByUserName(name string) (int, erro
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryOutboxByUserName(name string) ([]models.Activity, error) {
+func (r *PSQLRepository) QueryOutboxByUserName(name string, pageNum int) ([]models.Activity, error) {
 	var activities []models.Activity
-	_, err := r.cache.Get(fmt.Sprintf("outbox-%s", name), &activities)
+	_, err := r.cache.Get(fmt.Sprintf("outbox-%s-%d", name, pageNum), &activities)
 	if err == nil {
 		return activities, nil
 	}
-	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("outbox-%s", name)))
+	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("outbox-%s-%d", name, pageNum)))
 
 	sql := `SELECT *
 	FROM activities
 	WHERE actor = $1
-	ORDER BY id DESC`
+	ORDER BY id DESC
+	OFFSET $2
+	LIMIT $3`
 
 	rows, err := r.db.Query(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
 	)
 	if err != nil {
 		return nil, err
@@ -262,9 +270,9 @@ func (r *PSQLRepository) QueryOutboxByUserName(name string) ([]models.Activity, 
 		return activities, err
 	}
 
-	err = r.cache.Set(fmt.Sprintf("outbox-%s", name), activities)
+	err = r.cache.Set(fmt.Sprintf("outbox-%s-%d", name, pageNum), activities)
 	if err != nil {
-		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("outbox-%s", name)))
+		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("outbox-%s-%d", name, pageNum)))
 	}
 
 	return activities, nil
@@ -351,7 +359,7 @@ func (r *PSQLRepository) QueryFollowingTotalItemsByUserName(name string) (int, e
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryFollowingByUserName(name string) ([]string, error) {
+func (r *PSQLRepository) QueryFollowingByUserName(name string, pageNum int) ([]string, error) {
 	sql := `SELECT obj.iri
 	FROM activities AS act
 	JOIN objects AS obj ON obj.id = act.object_id
@@ -362,10 +370,14 @@ func (r *PSQLRepository) QueryFollowingByUserName(name string) ([]string, error)
 		WHERE act.type = 'Undo'
 	)
 	AND act.actor = $1
-	ORDER BY act.id DESC`
+	ORDER BY act.id DESC
+	OFFSET $2
+	LIMIT $3`
 
 	rows, err := r.db.Query(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
 	)
 	if err != nil {
 		return nil, err
@@ -413,7 +425,7 @@ func (r *PSQLRepository) QueryFollowersTotalItemsByUserName(name string) (int, e
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryFollowersByUserName(name string) ([]string, error) {
+func (r *PSQLRepository) QueryFollowersByUserName(name string, pageNum int) ([]string, error) {
 	sql := `SELECT act.actor
 	FROM activities AS act
 	JOIN objects AS obj ON obj.id = act.object_id
@@ -424,10 +436,14 @@ func (r *PSQLRepository) QueryFollowersByUserName(name string) ([]string, error)
 		WHERE act.type = 'Undo'
 	)
 	AND obj.iri = $1
-	ORDER BY act.id DESC`
+	ORDER BY act.id DESC
+	OFFSET $2
+	LIMIT $3`
 
 	rows, err := r.db.Query(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
 	)
 	if err != nil {
 		return nil, err
@@ -474,7 +490,7 @@ func (r *PSQLRepository) QueryLikedTotalItemsByUserName(name string) (int, error
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryLikedByUserName(name string) ([]models.Object, error) {
+func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]models.Object, error) {
 	sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
 	FROM objects AS obj
 	JOIN activities AS act ON act.object_id = obj.id
@@ -485,10 +501,14 @@ func (r *PSQLRepository) QueryLikedByUserName(name string) ([]models.Object, err
 		WHERE act.type = 'Undo'
 	)
 	AND act.actor = $1
-	ORDER BY act.id DESC`
+	ORDER BY act.id DESC
+	OFFSET $2
+	LIMIT $3`
 
 	rows, err := r.db.Query(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
 	)
 	if err != nil {
 		return nil, err
@@ -640,9 +660,9 @@ func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
+	err = r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
@@ -690,9 +710,9 @@ func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, objec
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
+	err = r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
@@ -778,9 +798,9 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name))
+	err = r.cache.Del(fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
@@ -835,9 +855,9 @@ func (r *PSQLRepository) CreateOutboxReferenceActivity(activityArb arb.Arb, name
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name))
+	err = r.cache.Del(fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name))
 	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s", name), fmt.Sprintf("outbox-totalItems-%s", name)))
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name)))
 	}
 	// TODO: Invalidate other cache items based on activityArb["type"]
 	return activityArb, nil
@@ -869,7 +889,7 @@ func (r *PSQLRepository) AddActivityTo(activityIRI string, recipient string) err
 	// If local clear inbox cache of user
 	if utils.IsFromHost(recipient, r.conf.ServerName) {
 		name := strings.TrimPrefix(recipient, fmt.Sprintf("%s://%s/%s/", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users))
-		return r.cache.Del(fmt.Sprintf("inbox-%s", name), fmt.Sprintf("inbox-totalItems-%s", name))
+		return r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	}
 	return nil
 }

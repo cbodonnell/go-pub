@@ -7,5 +7,5 @@ type Resource interface {
 	GenerateWebFinger(name string) models.WebFinger
 	GenerateActor(name string) models.Actor
 	GenerateOrderedCollection(name string, endpoint string, totalItems int) models.OrderedCollection
-	GenerateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}) models.OrderedCollectionPage
+	GenerateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}, pageNum int) models.OrderedCollectionPage
 }

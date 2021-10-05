@@ -42,6 +42,7 @@ var (
 		"REDIS_DB":            0,
 		"REDIS_EXP_SECONDS":   3600,
 		"ALLOWED_ORIGINS":     "",
+		"PAGE_LENGTH":         10,
 	}
 	configPaths = []string{
 		".",
@@ -68,6 +69,7 @@ type Configuration struct {
 	RSAPrivateKey  string      `mapstructure:"RSA_PRIVATE_KEY"`
 	Redis          RedisConfig `mapstructure:",squash"`
 	AllowedOrigins string      `mapstructure:"ALLOWED_ORIGINS"`
+	PageLength     int         `mapstructure:"PAGE_LENGTH"`
 }
 
 // DataSource struct

@@ -3,6 +3,7 @@ package resources
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/cheebz/go-pub/config"
@@ -109,22 +110,29 @@ func (r *ActivityPubResource) GenerateOrderedCollection(name string, endpoint st
 			Type: "OrderedCollection",
 		},
 		TotalItems: totalItems,
-		First:      fmt.Sprintf("%s://%s/%s/%s/%s?page=true", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
-		Last:       fmt.Sprintf("%s://%s/%s/%s/%s?min_id=0&page=true", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
+		First:      fmt.Sprintf("%s://%s/%s/%s/%s?page=0", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
+		Last:       fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, int(math.Ceil(float64(totalItems/r.conf.PageLength)))),
 	}
 }
 
-func (r *ActivityPubResource) GenerateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}) models.OrderedCollectionPage {
-	return models.OrderedCollectionPage{
+func (r *ActivityPubResource) GenerateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}, pageNum int) models.OrderedCollectionPage {
+	page := models.OrderedCollectionPage{
 		Object: models.Object{
 			Context: []interface{}{
 				"https://www.w3.org/ns/activitystreams",
 				"https://w3id.org/security/v1",
 			},
-			Id:   fmt.Sprintf("%s://%s/%s/%s/%s?page=true", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
+			Id:   fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum),
 			Type: "OrderedCollectionPage",
 		},
 		PartOf:       fmt.Sprintf("%s://%s/%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
 		OrderedItems: orderedItems,
 	}
+	if pageNum > 0 {
+		page.Prev = fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum-1)
+	}
+	if len(orderedItems) > r.conf.PageLength {
+		page.Next = fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum+1)
+	}
+	return page
 }
