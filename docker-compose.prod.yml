@@ -36,7 +36,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Can this be baked into either image?
+      - /etc/go-pub/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Can this be baked into either image?
       - /etc/go-pub/postgres-data/:/var/lib/postgresql/data/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
