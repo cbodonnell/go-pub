@@ -492,7 +492,8 @@ func (r *PSQLRepository) QueryLikedTotalItemsByUserName(name string) (int, error
 
 // func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]models.Object, error) {
 func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]string, error) {
-	sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
+	// sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
+	sql := `SELECT obj.iri
 	FROM objects AS obj
 	JOIN activities AS act ON act.object_id = obj.id
 	WHERE act.type = 'Like'
