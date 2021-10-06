@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/cheebz/go-pub/config"
@@ -56,7 +55,7 @@ func (j *ActivityPubJWT) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, cookie := range r.Cookies() {
 		authReq.AddCookie(cookie)
-		log.Printf("request cookie %s: %s", cookie.Name, cookie.Value)
+		// log.Printf("request cookie %s: %s", cookie.Name, cookie.Value)
 	}
 	authResp, err := client.Do(authReq)
 	if err != nil {
@@ -65,6 +64,6 @@ func (j *ActivityPubJWT) Refresh(w http.ResponseWriter, r *http.Request) {
 	for _, cookie := range authResp.Cookies() {
 		http.SetCookie(w, cookie)
 		r.AddCookie(cookie)
-		log.Printf("response cookie %s: %s", cookie.Name, cookie.Value)
+		// log.Printf("response cookie %s: %s", cookie.Name, cookie.Value)
 	}
 }
