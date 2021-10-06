@@ -86,7 +86,8 @@ func (s *ActivityPubService) GetLikedTotalItemsByUserName(name string) (int, err
 	return s.repo.QueryLikedTotalItemsByUserName(name)
 }
 
-func (s *ActivityPubService) GetLikedByUserName(name string, pageNum int) ([]models.Object, error) {
+// func (s *ActivityPubService) GetLikedByUserName(name string, pageNum int) ([]models.Object, error) {
+func (s *ActivityPubService) GetLikedByUserName(name string, pageNum int) ([]string, error) {
 	return s.repo.QueryLikedByUserName(name, pageNum)
 }
 

@@ -490,7 +490,8 @@ func (r *PSQLRepository) QueryLikedTotalItemsByUserName(name string) (int, error
 	return count, nil
 }
 
-func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]models.Object, error) {
+// func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]models.Object, error) {
+func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]string, error) {
 	sql := `SELECT obj.type, obj.iri, obj.content, obj.attributed_to, obj.in_reply_to
 	FROM objects AS obj
 	JOIN activities AS act ON act.object_id = obj.id
@@ -514,15 +515,20 @@ func (r *PSQLRepository) QueryLikedByUserName(name string, pageNum int) ([]model
 		return nil, err
 	}
 	defer rows.Close()
-	var objects []models.Object
+	// var objects []models.Object
+	var objects []string
 	for rows.Next() {
-		object := models.NewObject()
+		// object := models.NewObject()
+		var object string
+		// err = rows.Scan(
+		// 	&object.Type,
+		// 	&object.Id,
+		// 	&object.Content,
+		// 	&object.AttributedTo,
+		// 	&object.InReplyTo,
+		// )
 		err = rows.Scan(
-			&object.Type,
-			&object.Id,
-			&object.Content,
-			&object.AttributedTo,
-			&object.InReplyTo,
+			&object,
 		)
 		if err != nil {
 			return objects, err
