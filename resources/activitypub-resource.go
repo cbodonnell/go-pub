@@ -125,14 +125,17 @@ func (r *ActivityPubResource) GenerateOrderedCollectionPage(name string, endpoin
 			Id:   fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum),
 			Type: "OrderedCollectionPage",
 		},
-		PartOf:       fmt.Sprintf("%s://%s/%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
-		OrderedItems: orderedItems,
+		PartOf: fmt.Sprintf("%s://%s/%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint),
+		// OrderedItems: orderedItems,
 	}
 	if pageNum > 0 {
 		page.Prev = fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum-1)
 	}
 	if len(orderedItems) > r.conf.PageLength {
 		page.Next = fmt.Sprintf("%s://%s/%s/%s/%s?page=%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name, endpoint, pageNum+1)
+		page.OrderedItems = orderedItems[:10]
+	} else {
+		page.OrderedItems = orderedItems
 	}
 	return page
 }
