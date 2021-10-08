@@ -57,7 +57,7 @@ func (f *FederationWorker) federate(fed models.Federation) {
 	log.Println(fmt.Sprintf("%s is of type %s", fed.Recipient, recipientType))
 
 	switch recipientType {
-	case "Person":
+	case "Person", "Service":
 		activityIRI, err := activitypub.GetIRI(fed.Activity)
 		if err != nil {
 			log.Println(err)
