@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/cheebz/go-auth-helpers"
 	"github.com/cheebz/go-pub/activitypub"
-	"github.com/cheebz/go-pub/jwt"
 	"github.com/cheebz/go-pub/responses"
 	"github.com/cheebz/go-pub/services"
 	"github.com/gorilla/mux"
@@ -18,15 +18,15 @@ import (
 
 type ActivityPubMiddleware struct {
 	client   string
+	auth     string
 	response responses.Response
-	jwt      jwt.JWT
 }
 
-func NewActivityPubMiddleware(_client string, _response responses.Response, _jwt jwt.JWT) Middleware {
+func NewActivityPubMiddleware(_client string, _auth string, _response responses.Response) Middleware {
 	return &ActivityPubMiddleware{
 		client:   _client,
+		auth:     _auth,
 		response: _response,
-		jwt:      _jwt,
 	}
 }
 
@@ -95,42 +95,25 @@ func (m *ActivityPubMiddleware) ContentTypeMiddleware(h http.Handler) http.Handl
 	})
 }
 
-// func (m *ActivityPubMiddleware) JwtMiddleware(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		_, err := m.jwt.CheckJWTClaims(r)
-// 		if err != nil {
-// 			m.jwt.Refresh(w, r)
-// 			_, err = m.jwt.CheckJWTClaims(r)
-// 			if err != nil {
-// 				m.response.UnauthorizedRequest(w, err)
-// 				return
-// 			}
-// 		}
-// 		h.ServeHTTP(w, r)
-// 	})
-// }
-
 func (m *ActivityPubMiddleware) CreateJwtUsernameMiddleware(nameParam string) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, err := m.jwt.CheckJWTClaims(r)
+			authMap, err := auth.Authenticate(w, r, m.auth)
 			if err != nil {
-				// TODO: Create a simple endpoint-based middleware that does a reverse proxy
-				// If 200, proceed, else return 401
-				m.jwt.Refresh(w, r)
-				claims, err = m.jwt.CheckJWTClaims(r)
-				if err != nil {
-					m.response.UnauthorizedRequest(w, err)
-					return
-				}
-			}
-			// TODO: Get rid of the mux dependency here??
-			name := mux.Vars(r)[nameParam]
-			if claims.Username != name {
-				m.response.UnauthorizedRequest(w, errors.New("that's not yours"))
+				m.response.UnauthorizedRequest(w, err)
 				return
 			}
-			h.ServeHTTP(w, r)
+			if s, ok := authMap["username"].(string); !ok {
+				m.response.UnauthorizedRequest(w, errors.New("invalid response from auth endpoint"))
+				return
+			} else {
+				name := mux.Vars(r)[nameParam]
+				if s != name {
+					m.response.UnauthorizedRequest(w, errors.New("that's not yours"))
+					return
+				}
+				h.ServeHTTP(w, r)
+			}
 		})
 	}
 }
@@ -138,17 +121,19 @@ func (m *ActivityPubMiddleware) CreateJwtUsernameMiddleware(nameParam string) fu
 func (m *ActivityPubMiddleware) CreateUserMiddleware(service services.Service) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, err := m.jwt.CheckJWTClaims(r)
+			authMap, err := auth.Authenticate(w, r, m.auth)
 			if err != nil {
 				h.ServeHTTP(w, r)
 				return
 			}
-			err = service.CheckUser(claims.Username)
-			if err != nil {
-				_, err = service.CreateUser(claims.Username)
+			if username, ok := authMap["username"].(string); ok {
+				err = service.CheckUser(username)
 				if err != nil {
-					m.response.BadRequest(w, err)
-					return
+					_, err = service.CreateUser(username)
+					if err != nil {
+						m.response.BadRequest(w, err)
+						return
+					}
 				}
 			}
 			h.ServeHTTP(w, r)

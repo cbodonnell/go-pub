@@ -10,7 +10,6 @@ import (
 	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/handlers"
-	"github.com/cheebz/go-pub/jwt"
 	"github.com/cheebz/go-pub/logging"
 	"github.com/cheebz/go-pub/middleware"
 	"github.com/cheebz/go-pub/repositories"
@@ -44,10 +43,8 @@ func main() {
 	service := services.NewActivityPubService(conf, repo, worker)
 	// create response writer
 	response := responses.NewActivityPubResponse(conf.Debug)
-	// create jwt helper
-	jwt := jwt.NewJWT(conf)
 	// create middleware helper
-	middle := middleware.NewActivityPubMiddleware(conf.Client, response, jwt)
+	middle := middleware.NewActivityPubMiddleware(conf.Client, conf.Auth, response)
 	// create resource generator
 	resource := resources.NewActivityPubResource(conf)
 	// create handler (TODO: Make an options struct??)
