@@ -29,4 +29,5 @@ type Repository interface {
 	CreateOutboxReferenceActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	ActivityToExists(activityIRI string, recipientIRI string) bool
 	AddActivityTo(activityIRI string, recipient string) error
+	DeleteActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 }

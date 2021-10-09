@@ -172,11 +172,7 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 }
 
 func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string) (arb.Arb, error) {
-	objectArb, err := activityArb.GetArb("object")
-	if err != nil {
-		return activityArb, err
-	}
-	objectIRI, err := activityArb.GetURL("object")
+	objectArb, err := activitypub.FindProp(activityArb, "object", activitypub.AcceptHeaders)
 	if err != nil {
 		return activityArb, err
 	}
@@ -195,6 +191,10 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 		}
 	case "Follow":
 		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
+		if err != nil {
+			return activityArb, err
+		}
+		objectIRI, err := activitypub.GetIRI(objectArb)
 		if err != nil {
 			return activityArb, err
 		}
@@ -230,8 +230,10 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 		if actor != attributedTo {
 			return activityArb, errors.New("not your object")
 		}
-		// Add Delete Activity to collection
-		// Replace activity with Tombstone (or delete all together?)
+		activityArb, err = s.repo.DeleteActivity(activityArb, name)
+		if err != nil {
+			return activityArb, err
+		}
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}

@@ -813,7 +813,6 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 	return activityArb, nil
 }
 
-// Create a new outbox Activity with full details
 func (r *PSQLRepository) CreateOutboxReferenceActivity(activityArb arb.Arb, name string) (arb.Arb, error) {
 	ctx := context.Background()
 	tx, err := r.db.Begin(ctx)
@@ -899,4 +898,192 @@ func (r *PSQLRepository) AddActivityTo(activityIRI string, recipient string) err
 		return r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
 	}
 	return nil
+}
+
+func (r *PSQLRepository) DeleteActivity(activityArb arb.Arb, name string) (arb.Arb, error) {
+	ctx := context.Background()
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return activityArb, err
+	}
+	objectIRI, _ := activityArb.GetString("object")
+	object_id, err := r.queryObjectID(objectIRI)
+	if err != nil {
+		sql := `INSERT INTO objects (iri) 
+		VALUES ($1) RETURNING id;`
+		err = tx.QueryRow(ctx, sql,
+			activityArb["object"],
+		).Scan(&object_id)
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
+	}
+	sql := `INSERT INTO activities (type, actor, object_id)
+	VALUES ($1, $2, $3) RETURNING id;`
+	var activity_id int
+	err = tx.QueryRow(ctx, sql, activityArb["type"], activityArb["actor"], object_id).Scan(&activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Activities, activity_id)
+	sql = `UPDATE activities
+	SET iri = $1
+	WHERE id = $2;`
+	_, err = tx.Exec(ctx, sql, activityArb["id"], activity_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	sql = `UPDATE objects
+	SET type = 'Tombstone',
+	content = NULL
+	WHERE id = $1;`
+	_, err = tx.Exec(ctx, sql, object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+	r.deleteObjectCacheInvalidation(object_id)
+	err = r.cache.Del(fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name))
+	if err != nil {
+		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name)))
+	}
+	// TODO: Invalidate other cache items based on activityArb["type"]
+	return activityArb, nil
+}
+
+func (r *PSQLRepository) deleteObjectCacheInvalidation(object_id int) {
+	// Invalidate cached Object
+	err := r.cache.Del(fmt.Sprintf("object-%d", object_id))
+	if err != nil {
+		log.Println(fmt.Sprintf("error deleting cache %s", fmt.Sprintf("object-%d", object_id)))
+	}
+	// Invalidate cached Activities referencing this Object
+	activity_ids, err := r.getActivityIDsWithObjectID(object_id)
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting activities referencing object %d: %v", object_id, err))
+	}
+	var activity_keys []string
+	for i := range activity_ids {
+		activity_keys = append(activity_keys, fmt.Sprintf("activity-%d", activity_ids[i]))
+	}
+	err = r.cache.Del(activity_keys...)
+	if err != nil {
+		log.Println(fmt.Sprintf("error deleting cached activities referencing object %d: %v", object_id, err))
+	}
+	// Invalidate cached actor inboxes with Activities referencing this Object
+	actors_receiving, err := r.getActorsReceivingObjectID(object_id)
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting actors receiving object %d: %v", object_id, err))
+	}
+	var actors_receiving_keys []string
+	for i := range actors_receiving {
+		actors_receiving_keys = append(actors_receiving_keys, fmt.Sprintf("inbox-%s-*", actors_receiving[i]), fmt.Sprintf("inbox-totalItems-%s", actors_receiving[i]))
+	}
+	err = r.cache.Del(actors_receiving_keys...)
+	if err != nil {
+		log.Println(fmt.Sprintf("error deleting cached actor inboxes referencing object %d: %v", object_id, err))
+	}
+	// Invalidate cached actor inboxes with Activities referencing this Object
+	actors_sending, err := r.getActorsSendingObjectID(object_id)
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting actors sending object %d: %v", object_id, err))
+	}
+	var actors_sending_keys []string
+	for i := range actors_receiving {
+		actors_sending_keys = append(actors_sending_keys, fmt.Sprintf("outbox-%s-*", actors_sending[i]), fmt.Sprintf("outbox-totalItems-%s", actors_sending[i]))
+	}
+	err = r.cache.Del(actors_sending_keys...)
+	if err != nil {
+		log.Println(fmt.Sprintf("error deleting cached actor outboxes referencing object %d: %v", object_id, err))
+	}
+}
+
+func (r *PSQLRepository) getActivityIDsWithObjectID(object_id int) ([]int, error) {
+	sql := `SELECT id
+	FROM activities
+	WHERE object_id = $1`
+
+	rows, err := r.db.Query(context.Background(), sql, object_id)
+	if err != nil {
+		return nil, err
+	}
+	var activity_ids []int
+	defer rows.Close()
+	for rows.Next() {
+		var activity_id int
+		err = rows.Scan(&activity_id)
+		if err != nil {
+			return activity_ids, err
+		}
+		activity_ids = append(activity_ids, activity_id)
+	}
+	err = rows.Err()
+	if err != nil {
+		return activity_ids, err
+	}
+	return activity_ids, nil
+}
+
+func (r *PSQLRepository) getActorsReceivingObjectID(object_id int) ([]string, error) {
+	sql := `SELECT DISTINCT usr.name
+	FROM activities_to AS act_to
+	JOIN activities AS act ON act.id = act_to.activity_id
+	JOIN objects AS obj ON obj.id = act.object_id
+	JOIN users AS usr ON usr.iri = act_to.iri
+	WHERE obj.id = $1`
+
+	rows, err := r.db.Query(context.Background(), sql, object_id)
+	if err != nil {
+		return nil, err
+	}
+	var actors []string
+	defer rows.Close()
+	for rows.Next() {
+		var actor string
+		err = rows.Scan(&actor)
+		if err != nil {
+			return actors, err
+		}
+		actors = append(actors, actor)
+	}
+	err = rows.Err()
+	if err != nil {
+		return actors, err
+	}
+	return actors, nil
+}
+
+func (r *PSQLRepository) getActorsSendingObjectID(object_id int) ([]string, error) {
+	sql := `SELECT DISTINCT usr.name
+	FROM activities AS act
+	JOIN objects AS obj ON obj.id = act.object_id
+	JOIN users AS usr ON usr.iri = act.actor
+	WHERE obj.id = $1`
+
+	rows, err := r.db.Query(context.Background(), sql, object_id)
+	if err != nil {
+		return nil, err
+	}
+	var actors []string
+	defer rows.Close()
+	for rows.Next() {
+		var actor string
+		err = rows.Scan(&actor)
+		if err != nil {
+			return actors, err
+		}
+		actors = append(actors, actor)
+	}
+	err = rows.Err()
+	if err != nil {
+		return actors, err
+	}
+	return actors, nil
 }
