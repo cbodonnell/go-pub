@@ -149,11 +149,22 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 			return activityArb, err
 		}
 		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
-	case "Undo", "Accept":
+	case "Undo", "Accept", "Like", "Announce":
 		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
 		}
+	case "Delete":
+		// TODO: DeleteActivity
+		attributedTo, err := objectArb.GetString("attributedTo")
+		if err != nil {
+			return activityArb, err
+		}
+		if actorIRI.String() != attributedTo {
+			return activityArb, errors.New("not your object")
+		}
+		// Add Delete Activity to collection
+		// Replace activity with Tombstone (or delete all together?)
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}
@@ -161,34 +172,29 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 }
 
 func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string) (arb.Arb, error) {
-	activityType, err := activitypub.GetType(activityArb)
+	objectArb, err := activityArb.GetArb("object")
+	if err != nil {
+		return activityArb, err
+	}
+	objectIRI, err := activityArb.GetURL("object")
 	if err != nil {
 		return activityArb, err
 	}
 	actor := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	activityArb["actor"] = actor
+	activityType, err := activitypub.GetType(activityArb)
+	if err != nil {
+		return activityArb, err
+	}
 	switch activityType {
 	case "Create":
-		objectArb, err := activityArb.GetArb("object")
-		if err != nil {
-			return activityArb, err
-		}
 		objectArb["attributedTo"] = actor
 		activityArb, err = s.repo.CreateOutboxActivity(activityArb, objectArb, name)
 		if err != nil {
 			return activityArb, err
 		}
-	case "Like":
-		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
-		if err != nil {
-			return activityArb, err
-		}
 	case "Follow":
 		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
-		if err != nil {
-			return activityArb, err
-		}
-		objectIRI, err := activityArb.GetURL("object")
 		if err != nil {
 			return activityArb, err
 		}
@@ -210,11 +216,22 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 			}
 			s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actor, Activity: responseArb}
 		}
-	case "Undo":
+	case "Like", "Undo":
 		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err
 		}
+	case "Delete":
+		// TODO: DeleteActivity
+		attributedTo, err := objectArb.GetString("attributedTo")
+		if err != nil {
+			return activityArb, err
+		}
+		if actor != attributedTo {
+			return activityArb, errors.New("not your object")
+		}
+		// Add Delete Activity to collection
+		// Replace activity with Tombstone (or delete all together?)
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}

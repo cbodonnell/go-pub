@@ -115,6 +115,8 @@ func (m *ActivityPubMiddleware) CreateJwtUsernameMiddleware(nameParam string) fu
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, err := m.jwt.CheckJWTClaims(r)
 			if err != nil {
+				// TODO: Create a simple endpoint-based middleware that does a reverse proxy
+				// If 200, proceed, else return 401
 				m.jwt.Refresh(w, r)
 				claims, err = m.jwt.CheckJWTClaims(r)
 				if err != nil {
