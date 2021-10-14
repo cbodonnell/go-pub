@@ -126,12 +126,12 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 	}
 	recipient := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	switch activityType {
-	// case "Create":
-	// 	_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
-	// 	if err != nil {
-	// 		return activityArb, err
-	// 	}
-	case "Create", "Announce", "Like", "Undo", "Accept":
+	case "Create":
+		_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
+		if err != nil {
+			return activityArb, err
+		}
+	case "Announce", "Like", "Undo", "Accept":
 		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
