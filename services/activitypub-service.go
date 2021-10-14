@@ -126,8 +126,13 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 	}
 	recipient := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	switch activityType {
-	case "Create":
-		_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
+	// case "Create":
+	// 	_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
+	// 	if err != nil {
+	// 		return activityArb, err
+	// 	}
+	case "Create", "Announce", "Like", "Undo", "Accept":
+		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
 		if err != nil {
 			return activityArb, err
 		}
@@ -149,11 +154,6 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 			return activityArb, err
 		}
 		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
-	case "Undo", "Accept", "Like", "Announce":
-		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
-		if err != nil {
-			return activityArb, err
-		}
 	case "Delete":
 		// TODO: DeleteActivity
 		attributedTo, err := objectArb.GetString("attributedTo")
