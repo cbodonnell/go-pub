@@ -44,6 +44,16 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+  pgadmin:
+    image: dpage/pgadmin4
+    depends_on:
+      - postgres
+    ports:
+      - "5555:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    restart: unless-stopped
   redis:
     image: redis:latest
     command: redis-server --requirepass ${REDIS_PASSWORD} # Can this be made optional?

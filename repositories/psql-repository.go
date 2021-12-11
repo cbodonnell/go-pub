@@ -754,6 +754,8 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 		return activityArb, err
 	}
 	// TODO: Code here to prevent duplicate objects???
+	// TODO: How to get audio file data in here?
+	// Need a related table for sources? <-- look at ap vocab
 	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to) 
 	VALUES ($1, $2, $3, $4) RETURNING id;`
 	var object_id int

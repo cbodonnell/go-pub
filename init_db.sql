@@ -27,6 +27,20 @@ BEGIN
 		CONSTRAINT objects_pkey PRIMARY KEY (id)
 	);
 
+	-- public.object_files definition
+
+	CREATE TABLE IF NOT EXISTS public.object_files (
+		id serial NOT NULL,
+		object_id int4 NOT NULL,
+		"type" text NOT NULL,
+		href text NOT NULL,
+		media_type text NOT NULL,
+		CONSTRAINT object_files_pkey PRIMARY KEY (id)
+	);
+
+	ALTER TABLE public.object_files DROP CONSTRAINT IF EXISTS object_files_object_id_fk;
+	ALTER TABLE public.object_files ADD CONSTRAINT object_files_object_id_fk FOREIGN KEY (object_id) REFERENCES public.objects(id);
+
 	-- public.activities definition
 
 	CREATE TABLE IF NOT EXISTS public.activities (
