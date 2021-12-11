@@ -49,7 +49,7 @@ services:
     depends_on:
       - postgres
     ports:
-      - "5555:80"
+      - "127.0.0.1:5555:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
