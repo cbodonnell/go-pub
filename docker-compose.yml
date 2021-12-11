@@ -36,7 +36,6 @@ services:
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Can this be baked into either image?
       - ./postgres-data/:/var/lib/postgresql/data/
-      - ./pgadmin-data/:/var/lib/pgadmin/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -52,6 +51,8 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - ./pgadmin-data/:/var/lib/pgadmin/
     restart: unless-stopped
   redis:
     image: redis:latest
