@@ -54,7 +54,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
-      - /etc/go-pub/pgadmin:/var/lib/pgadmin
+      - /etc/go-pub/pgadmin-data/:/var/lib/pgadmin/
     restart: unless-stopped
   redis:
     image: redis:latest

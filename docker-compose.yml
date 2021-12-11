@@ -52,7 +52,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
-      - ./pgadmin:/var/lib/pgadmin
+      - ./pgadmin-data:/var/lib/pgadmin
     restart: unless-stopped
   redis:
     image: redis:latest
@@ -61,7 +61,7 @@ services:
 
 volumes:
   postgres-data:
-  pgadmin:
+  pgadmin-data:
 
 networks:
   pub_net:
