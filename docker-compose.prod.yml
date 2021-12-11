@@ -38,6 +38,7 @@ services:
     volumes:
       - /etc/go-pub/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Can this be baked into either image?
       - /etc/go-pub/postgres-data/:/var/lib/postgresql/data/
+      - /etc/go-pub/pgadmin-data/:/var/lib/pgadmin/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -61,6 +62,7 @@ services:
 
 volumes:
   postgres-data:
+  pgadmin-data:
 
 networks:
   pub_net:
