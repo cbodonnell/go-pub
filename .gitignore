@@ -9,6 +9,7 @@ go-pub.exe
 
 # Static files
 static/*
+uploads/*
 
 # Database volumes
 postgres-data/*

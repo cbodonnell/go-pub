@@ -18,5 +18,6 @@ type Handler interface {
 	GetObject(w http.ResponseWriter, r *http.Request)
 	PostInbox(w http.ResponseWriter, r *http.Request)
 	PostOutbox(w http.ResponseWriter, r *http.Request)
+	UploadMedia(w http.ResponseWriter, r *http.Request)
 	SinkHandler(w http.ResponseWriter, r *http.Request)
 }

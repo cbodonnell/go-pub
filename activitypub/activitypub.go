@@ -26,6 +26,8 @@ var ContentTypeHeaders = http.Header{
 	},
 }
 
+var UploadContentType = "multipart/form-data"
+
 func CheckContentType(headers http.Header) error {
 	h := headers.Values("Content-Type")
 	for _, v := range h {
@@ -34,6 +36,17 @@ func CheckContentType(headers http.Header) error {
 			if strings.Contains(v, item) {
 				return nil
 			}
+		}
+	}
+	return errors.New("invalid content-type headers")
+}
+
+func CheckUploadContentType(headers http.Header) error {
+	h := headers.Values("Content-Type")
+	for _, v := range h {
+		log.Println("Request contains Content-Type header: " + v)
+		if strings.Contains(v, UploadContentType) {
+			return nil
 		}
 	}
 	return errors.New("invalid content-type headers")
