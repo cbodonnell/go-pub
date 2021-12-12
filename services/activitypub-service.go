@@ -164,7 +164,10 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 		if actorIRI.String() != attributedTo {
 			return activityArb, errors.New("not your object")
 		}
-		// Add Delete Activity to collection
+		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
+		if err != nil {
+			return activityArb, err
+		}
 		// Replace activity with Tombstone (or delete all together?)
 	default:
 		return activityArb, errors.New("unsupported activity type")
@@ -223,7 +226,6 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 			return activityArb, err
 		}
 	case "Delete":
-		// TODO: DeleteActivity
 		attributedTo, err := objectArb.GetString("attributedTo")
 		if err != nil {
 			return activityArb, err
@@ -235,6 +237,14 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 		if err != nil {
 			return activityArb, err
 		}
+		// // TODO: Delete object files from disk
+		// objectIRI, err := activitypub.GetIRI(objectArb)
+		// if err != nil {
+		// 	return activityArb, err
+		// }
+		// Make repo method to GetObjectFiles(iri) returning []string of hrefs
+		// parse out file names to be deleted
+		// file := path.Base(href)
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}
@@ -257,6 +267,7 @@ func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, nam
 	}
 	fileArb := arb.New()
 	fileArb["name"] = m.Name
+	fileArb["uuid"] = m.UUID
 	fileArb["type"] = "Link"
 	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Uploads, m.UUID, m.FileExt)
 	fileArb["mediaType"] = m.MimeType

@@ -855,12 +855,13 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 		}
 		var urls []arb.Arb
 		for _, fileArb := range fileArbs {
-			sql = `INSERT INTO object_files (object_id, created, name, type, href, media_type) 
+			sql = `INSERT INTO object_files (object_id, created, name, uuid, type, href, media_type) 
 			VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5);`
 			// TODO: return id to populate file iri
 			_, err = tx.Exec(ctx, sql,
 				object_id,
 				fileArb["name"],
+				fileArb["uuid"],
 				fileArb["type"],
 				fileArb["href"],
 				fileArb["mediaType"],
@@ -1035,8 +1036,16 @@ func (r *PSQLRepository) DeleteActivity(activityArb arb.Arb, name string) (arb.A
 	}
 	sql = `UPDATE objects
 	SET type = 'Tombstone',
-	content = NULL
+	content = NULL,
+	name = NULL
 	WHERE id = $1;`
+	_, err = tx.Exec(ctx, sql, object_id)
+	if err != nil {
+		tx.Rollback(ctx)
+		return activityArb, err
+	}
+	sql = `DELETE FROM object_files
+	WHERE object_id = $1;`
 	_, err = tx.Exec(ctx, sql, object_id)
 	if err != nil {
 		tx.Rollback(ctx)

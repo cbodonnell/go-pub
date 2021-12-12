@@ -35,6 +35,7 @@ BEGIN
 		object_id int4 NOT NULL,
 		created timestamptz NOT NULL,
 		"name" text NOT NULL,
+		uuid text NOT NULL,
 		"type" text NOT NULL,
 		href text NOT NULL,
 		media_type text NOT NULL,
