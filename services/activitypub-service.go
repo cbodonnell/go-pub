@@ -252,7 +252,7 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 
 func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, name string) (arb.Arb, error) {
 	// TODO: Save file to disk, creating uuid
-	err := m.Save()
+	err := m.Save(s.conf.UploadDir)
 	if err != nil {
 		return nil, err
 	}
@@ -267,8 +267,7 @@ func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, nam
 	fileArb := arb.New()
 	fileArb["name"] = m.Name
 	fileArb["type"] = "Link"
-	// TODO: Incorporate uploads endpoing into configuration
-	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, "uploads", m.UUID, m.FileExt)
+	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Uploads, m.UUID, m.FileExt)
 	fileArb["mediaType"] = m.MimeType
 
 	activityArb, err = s.repo.CreateOutboxMediaActivity(activityArb, objectArb, fileArb, name)

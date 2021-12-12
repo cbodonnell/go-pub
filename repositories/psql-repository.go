@@ -292,7 +292,7 @@ func (r *PSQLRepository) queryObjectIRIById(object_id int) (string, error) {
 }
 
 func (r *PSQLRepository) queryObjectByIRI(iri string) (models.Object, error) {
-	sql := `SELECT type, iri, content, attributed_to, in_reply_to
+	sql := `SELECT type, iri, content, attributed_to, in_reply_to, name
 	FROM objects WHERE iri = $1;`
 	object := models.NewObject()
 	err := r.db.QueryRow(context.Background(), sql, iri).Scan(
@@ -301,10 +301,43 @@ func (r *PSQLRepository) queryObjectByIRI(iri string) (models.Object, error) {
 		&object.Content,
 		&object.AttributedTo,
 		&object.InReplyTo,
+		&object.Name,
 	)
 	if err != nil {
 		return object, err
 	}
+
+	sql = `SELECT id, type, href, media_type
+	FROM object_files
+	WHERE object_id = (SELECT id FROM object WHERE iri = $1)`
+	rows, err := r.db.Query(context.Background(), sql, iri)
+	if err != nil {
+		return object, err
+	}
+	defer rows.Close()
+	var links []models.Link
+	for rows.Next() {
+		link := models.NewLink()
+		var link_id int
+		err = rows.Scan(
+			&link_id,
+			&link.Type,
+			&link.Href,
+			&link.MediaType,
+		)
+		if err != nil {
+			return object, err
+		}
+		// TODO: Add links endpoint to config
+		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
+		links = append(links, link)
+	}
+	err = rows.Err()
+	if err != nil {
+		return object, err
+	}
+	object.Url = links
+
 	return object, nil
 }
 
@@ -598,7 +631,7 @@ func (r *PSQLRepository) QueryObject(id int) (models.Object, error) {
 	}
 	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("activity-%d", id)))
 
-	sql := `SELECT type, iri, content, attributed_to, in_reply_to
+	sql := `SELECT type, iri, content, attributed_to, in_reply_to, name
 	FROM objects WHERE id = $1;`
 	err = r.db.QueryRow(context.Background(), sql, id).Scan(
 		&object.Type,
@@ -606,10 +639,43 @@ func (r *PSQLRepository) QueryObject(id int) (models.Object, error) {
 		&object.Content,
 		&object.AttributedTo,
 		&object.InReplyTo,
+		&object.Name,
 	)
 	if err != nil {
 		return object, err
 	}
+
+	// TODO: Refactor to queryLinksByObjectID
+	sql = `SELECT id, type, href, media_type
+	FROM object_files
+	WHERE object_id = $1`
+	rows, err := r.db.Query(context.Background(), sql, id)
+	if err != nil {
+		return object, err
+	}
+	defer rows.Close()
+	var links []models.Link
+	for rows.Next() {
+		link := models.NewLink()
+		var link_id int
+		err = rows.Scan(
+			&link_id,
+			&link.Type,
+			&link.Href,
+			&link.MediaType,
+		)
+		if err != nil {
+			return object, err
+		}
+		// TODO: Add links endpoint to config
+		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
+		links = append(links, link)
+	}
+	err = rows.Err()
+	if err != nil {
+		return object, err
+	}
+	object.Url = links
 
 	err = r.cache.Set(fmt.Sprintf("object-%d", id), object)
 	if err != nil {
@@ -1096,14 +1162,15 @@ func (r *PSQLRepository) CreateOutboxMediaActivity(activityArb arb.Arb, objectAr
 	if err != nil {
 		return activityArb, err
 	}
-	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to) 
-	VALUES ($1, $2, $3, $4) RETURNING id;`
+	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to, name) 
+	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
 	var object_id int
 	err = tx.QueryRow(ctx, sql,
 		objectArb["type"],
 		objectArb["content"],
 		objectArb["attributedTo"],
 		objectArb["inReplyTo"],
+		objectArb["name"],
 	).Scan(&object_id)
 	if err != nil {
 		tx.Rollback(ctx)

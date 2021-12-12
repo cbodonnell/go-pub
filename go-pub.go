@@ -48,7 +48,7 @@ func main() {
 	// create resource generator
 	resource := resources.NewActivityPubResource(conf)
 	// create handler (TODO: Make an options struct??)
-	handler := handlers.NewMuxHandler(conf.Endpoints, middle, service, resource, response)
+	handler := handlers.NewMuxHandler(conf, middle, service, resource, response)
 	if conf.AllowedOrigins != "" {
 		handler.AllowCORS(strings.Split(conf.AllowedOrigins, ","))
 	}

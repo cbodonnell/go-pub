@@ -19,7 +19,7 @@ import (
 )
 
 type MuxHandler struct {
-	endpoints  config.Endpoints
+	conf       config.Configuration
 	middleware middleware.Middleware
 	service    services.Service
 	resource   resources.Resource
@@ -31,9 +31,9 @@ var (
 	nameParam = "name"
 )
 
-func NewMuxHandler(_endpoints config.Endpoints, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
+func NewMuxHandler(_config config.Configuration, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
 	h := &MuxHandler{
-		endpoints:  _endpoints,
+		conf:       _config,
 		middleware: _middleware,
 		service:    _service,
 		resource:   _resource,
@@ -52,35 +52,34 @@ func (h *MuxHandler) setupRoutes() {
 
 	get := h.router.NewRoute().Subrouter() // -> public GET requests
 	get.Use(h.middleware.AcceptMiddleware, userMiddleware)
-	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}", h.endpoints.Users, nameParam), h.GetUser).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Outbox), h.GetOutbox).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Following), h.GetFollowing).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Followers), h.GetFollowers).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Liked), h.GetLiked).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.endpoints.Activities), h.GetActivity).Methods("GET", "OPTIONS")
-	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.endpoints.Objects), h.GetObject).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}", h.conf.Endpoints.Users, nameParam), h.GetUser).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Outbox), h.GetOutbox).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Following), h.GetFollowing).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Followers), h.GetFollowers).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Liked), h.GetLiked).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.conf.Endpoints.Activities), h.GetActivity).Methods("GET", "OPTIONS")
+	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.conf.Endpoints.Objects), h.GetObject).Methods("GET", "OPTIONS")
 
 	post := h.router.NewRoute().Subrouter() // -> public POST requests
 	post.Use(h.middleware.ContentTypeMiddleware, userMiddleware)
-	post.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Inbox), h.PostInbox).Methods("POST", "OPTIONS")
+	post.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Inbox), h.PostInbox).Methods("POST", "OPTIONS")
 
 	jwtUsernameMiddleware := h.middleware.CreateJwtUsernameMiddleware(nameParam)
 
 	aGet := get.NewRoute().Subrouter()
 	aGet.Use(jwtUsernameMiddleware)
-	aGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Inbox), h.GetInbox).Methods("GET", "OPTIONS")
+	aGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Inbox), h.GetInbox).Methods("GET", "OPTIONS")
 
 	aPost := post.NewRoute().Subrouter()
 	aPost.Use(jwtUsernameMiddleware)
-	aPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Outbox), h.PostOutbox).Methods("POST", "OPTIONS")
+	aPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Outbox), h.PostOutbox).Methods("POST", "OPTIONS")
 
 	uPost := h.router.NewRoute().Subrouter() // -> webfinger
 	uPost.Use(jwtUsernameMiddleware)
-	uPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/endpoints/uploadMedia", h.endpoints.Users, nameParam), h.UploadMedia).Methods("POST", "OPTIONS")
+	uPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.UploadMedia), h.UploadMedia).Methods("POST", "OPTIONS")
 
 	uGet := h.router.NewRoute().Subrouter() // -> webfinger
-	// TODO: Get uploads url from endpoints configuration
-	uGet.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
+	uGet.PathPrefix(fmt.Sprintf("/%s/", h.conf.Endpoints.Uploads)).Handler(http.StripPrefix(fmt.Sprintf("/%s/", h.conf.Endpoints.Uploads), http.FileServer(http.Dir(h.conf.UploadDir))))
 
 	sink := h.router.NewRoute().Subrouter() // -> sink to handle all other routes
 	sink.Use(h.middleware.AcceptMiddleware)
@@ -135,7 +134,7 @@ func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		inbox := h.resource.GenerateOrderedCollection(name, h.endpoints.Inbox, totalItems)
+		inbox := h.resource.GenerateOrderedCollection(name, h.conf.Endpoints.Inbox, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(inbox)
 		return
@@ -154,7 +153,7 @@ func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range activities {
 		orderedItems[i] = activity
 	}
-	inboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Inbox, orderedItems, pageNum)
+	inboxPage := h.resource.GenerateOrderedCollectionPage(name, h.conf.Endpoints.Inbox, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(inboxPage)
 }
@@ -173,7 +172,7 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		outbox := h.resource.GenerateOrderedCollection(user.Name, h.endpoints.Outbox, totalItems)
+		outbox := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Outbox, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(outbox)
 		return
@@ -192,7 +191,7 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range activities {
 		orderedItems[i] = activity
 	}
-	outboxPage := h.resource.GenerateOrderedCollectionPage(name, h.endpoints.Outbox, orderedItems, pageNum)
+	outboxPage := h.resource.GenerateOrderedCollectionPage(name, h.conf.Endpoints.Outbox, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(outboxPage)
 }
@@ -211,7 +210,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		following := h.resource.GenerateOrderedCollection(user.Name, h.endpoints.Following, totalItems)
+		following := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Following, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(following)
 		return
@@ -230,7 +229,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range following {
 		orderedItems[i] = actor
 	}
-	followingPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Following, orderedItems, pageNum)
+	followingPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Following, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followingPage)
 }
@@ -249,7 +248,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		followers := h.resource.GenerateOrderedCollection(user.Name, h.endpoints.Followers, totalItems)
+		followers := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Followers, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(followers)
 		return
@@ -268,7 +267,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range followers {
 		orderedItems[i] = actor
 	}
-	followersPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Followers, orderedItems, pageNum)
+	followersPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Followers, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followersPage)
 }
@@ -287,7 +286,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		liked := h.resource.GenerateOrderedCollection(user.Name, h.endpoints.Liked, totalItems)
+		liked := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Liked, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(liked)
 		return
@@ -306,7 +305,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range liked {
 		orderedItems[i] = activity
 	}
-	likedPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.endpoints.Liked, orderedItems, pageNum)
+	likedPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Liked, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(likedPage)
 }

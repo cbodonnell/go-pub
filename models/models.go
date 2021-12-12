@@ -82,7 +82,7 @@ type Object struct {
 	AttributedTo interface{} `json:"attributedTo,omitempty"`
 	Audience     []string    `json:"audience,omitempty"`
 	Content      interface{} `json:"content,omitempty"`
-	Name         string      `json:"name,omitempty"`
+	Name         interface{} `json:"name,omitempty"`
 	EndTime      string      `json:"endTime,omitempty"`
 	Generator    string      `json:"generator,omitempty"`
 	Icon         string      `json:"icon,omitempty"`
@@ -116,9 +116,9 @@ func NewObject() Object {
 
 // Link struct (see: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-link)
 type Link struct {
-	Context []string `json:"@context"`
-	Id      string   `json:"id"`
-	Type    string   `json:"type"`
+	Context interface{} `json:"@context"`
+	Id      string      `json:"id"`
+	Type    string      `json:"type"`
 
 	Href      string `json:"href,omitempty"`
 	Rel       string `json:"rel,omitempty"`
@@ -128,6 +128,15 @@ type Link struct {
 	Height    string `json:"height,omitempty"`
 	Width     string `json:"width,omitempty"`
 	Preview   string `json:"preview,omitempty"`
+}
+
+func NewLink() Link {
+	var link Link
+	link.Context = []interface{}{
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1",
+	}
+	return link
 }
 
 // Actor struct

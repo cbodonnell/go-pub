@@ -12,36 +12,39 @@ import (
 
 var (
 	defaults = map[string]interface{}{
-		"DEBUG":               true,
-		"PORT":                80,
-		"LOG_FILE":            "",
-		"SERVER_NAME":         "localhost",
-		"AUTH":                "http://localhost:8080/auth/",
-		"CLIENT":              "http://localhost:3000",
-		"ENDPOINT_USERS":      "users",
-		"ENDPOINT_ACTIVITIES": "activities",
-		"ENDPOINT_OBJECTS":    "objects",
-		"ENDPOINT_INBOX":      "inbox",
-		"ENDPOINT_OUTBOX":     "outbox",
-		"ENDPOINT_FOLLOWING":  "following",
-		"ENDPOINT_FOLLOWERS":  "followers",
-		"ENDPOINT_LIKED":      "liked",
-		"SSL_CERT":            "",
-		"SSL_KEY":             "",
-		"DB_HOST":             "host",
-		"DB_PORT":             5432,
-		"DB_NAME":             "database",
-		"DB_USER":             "user",
-		"DB_PASSWORD":         "password",
-		"RSA_PUBLIC_KEY":      "public.pem",
-		"RSA_PRIVATE_KEY":     "private.pem",
-		"REDIS_HOST":          "localhost",
-		"REDIS_PORT":          6379,
-		"REDIS_PASSWORD":      "",
-		"REDIS_DB":            0,
-		"REDIS_EXP_SECONDS":   3600,
-		"ALLOWED_ORIGINS":     "",
-		"PAGE_LENGTH":         10,
+		"DEBUG":                 true,
+		"PORT":                  80,
+		"LOG_FILE":              "",
+		"SERVER_NAME":           "localhost",
+		"AUTH":                  "http://localhost:8080/auth/",
+		"CLIENT":                "http://localhost:3000",
+		"ENDPOINT_USERS":        "users",
+		"ENDPOINT_ACTIVITIES":   "activities",
+		"ENDPOINT_OBJECTS":      "objects",
+		"ENDPOINT_INBOX":        "inbox",
+		"ENDPOINT_OUTBOX":       "outbox",
+		"ENDPOINT_FOLLOWING":    "following",
+		"ENDPOINT_FOLLOWERS":    "followers",
+		"ENDPOINT_LIKED":        "liked",
+		"ENDPOINT_UPLOAD_MEDIA": "uploadMedia",
+		"ENDPOINT_UPLOADS":      "uploads",
+		"UPLOAD_DIR":            "./uploads/",
+		"SSL_CERT":              "",
+		"SSL_KEY":               "",
+		"DB_HOST":               "host",
+		"DB_PORT":               5432,
+		"DB_NAME":               "database",
+		"DB_USER":               "user",
+		"DB_PASSWORD":           "password",
+		"RSA_PUBLIC_KEY":        "public.pem",
+		"RSA_PRIVATE_KEY":       "private.pem",
+		"REDIS_HOST":            "localhost",
+		"REDIS_PORT":            6379,
+		"REDIS_PASSWORD":        "",
+		"REDIS_DB":              0,
+		"REDIS_EXP_SECONDS":     3600,
+		"ALLOWED_ORIGINS":       "",
+		"PAGE_LENGTH":           10,
 	}
 	configPaths = []string{
 		".",
@@ -60,6 +63,7 @@ type Configuration struct {
 	Auth           string      `mapstructure:"AUTH"`
 	Client         string      `mapstructure:"CLIENT"`
 	Endpoints      Endpoints   `mapstructure:",squash"`
+	UploadDir      string      `mapstructure:"UPLOAD_DIR"`
 	SSLCert        string      `mapstructure:"SSL_CERT"`
 	SSLKey         string      `mapstructure:"SSL_KEY"`
 	Db             DataSource  `mapstructure:",squash"`
@@ -73,14 +77,16 @@ type Configuration struct {
 
 // DataSource struct
 type Endpoints struct {
-	Users      string `mapstructure:"ENDPOINT_USERS"`
-	Activities string `mapstructure:"ENDPOINT_ACTIVITIES"`
-	Objects    string `mapstructure:"ENDPOINT_OBJECTS"`
-	Inbox      string `mapstructure:"ENDPOINT_INBOX"`
-	Outbox     string `mapstructure:"ENDPOINT_OUTBOX"`
-	Following  string `mapstructure:"ENDPOINT_FOLLOWERS"`
-	Followers  string `mapstructure:"ENDPOINT_FOLLOWING"`
-	Liked      string `mapstructure:"ENDPOINT_LIKED"`
+	Users       string `mapstructure:"ENDPOINT_USERS"`
+	Activities  string `mapstructure:"ENDPOINT_ACTIVITIES"`
+	Objects     string `mapstructure:"ENDPOINT_OBJECTS"`
+	Inbox       string `mapstructure:"ENDPOINT_INBOX"`
+	Outbox      string `mapstructure:"ENDPOINT_OUTBOX"`
+	Following   string `mapstructure:"ENDPOINT_FOLLOWERS"`
+	Followers   string `mapstructure:"ENDPOINT_FOLLOWING"`
+	Liked       string `mapstructure:"ENDPOINT_LIKED"`
+	UploadMedia string `mapstructure:"ENDPOINT_UPLOAD_MEDIA"`
+	Uploads     string `mapstructure:"ENDPOINT_UPLOADS"`
 }
 
 // DataSource struct

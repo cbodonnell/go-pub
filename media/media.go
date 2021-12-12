@@ -57,13 +57,13 @@ func ParseMedia(r *http.Request, name string) (Media, error) {
 	return m, nil
 }
 
-func (m *Media) Save() error {
-	err := os.MkdirAll("./uploads", os.ModePerm)
+func (m *Media) Save(dir string) error {
+	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Create(fmt.Sprintf("./uploads/%s%s", m.UUID, m.FileExt))
+	f, err := os.Create(fmt.Sprintf(dir + m.UUID + m.FileExt))
 	if err != nil {
 		return err
 	}
