@@ -24,6 +24,7 @@ BEGIN
 		"content" text NULL,
 		attributed_to text NULL,
 		in_reply_to text NULL,
+		"name" text NULL,
 		CONSTRAINT objects_pkey PRIMARY KEY (id)
 	);
 
