@@ -14,6 +14,7 @@ services:
       - RSA_PRIVATE_KEY=/etc/rsa/private.pem
       # - SSL_CERT=./certs/cert.pem
       # - SSL_KEY=./certs/key.pem
+      - UPLOAD_DIR=/app/uploads/
     env_file:
       - ${ENV}.env
     depends_on:
@@ -22,7 +23,7 @@ services:
     volumes:
       - ${RSA_PUBLIC_KEY}:/etc/rsa/public.pem
       - ${RSA_PRIVATE_KEY}:/etc/rsa/private.pem
-      - ${UPLOAD_DIR}:/app/uploads
+      - ${UPLOAD_DIR}:/app/uploads/
     networks:
       - default
       - pub_net
