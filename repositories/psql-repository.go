@@ -332,11 +332,13 @@ func (r *PSQLRepository) queryObjectByIRI(iri string) (models.Object, error) {
 		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
 		links = append(links, link)
 	}
+	if links != nil {
+		object.Url = links
+	}
 	err = rows.Err()
 	if err != nil {
 		return object, err
 	}
-	object.Url = links
 
 	return object, nil
 }
@@ -671,11 +673,13 @@ func (r *PSQLRepository) QueryObject(id int) (models.Object, error) {
 		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
 		links = append(links, link)
 	}
+	if links != nil {
+		object.Url = links
+	}
 	err = rows.Err()
 	if err != nil {
 		return object, err
 	}
-	object.Url = links
 
 	err = r.cache.Set(fmt.Sprintf("object-%d", id), object)
 	if err != nil {
