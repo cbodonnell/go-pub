@@ -415,7 +415,6 @@ func (h *MuxHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	// defer file.Close()
 	activityArb, err = h.service.UploadMedia(activityArb, file, name)
 	if err != nil {
 		h.response.InternalServerError(w, err)

@@ -251,11 +251,15 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 }
 
 func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, name string) (arb.Arb, error) {
-	// TODO: Save file to disk, creating uuid
 	err := m.Save(s.conf.UploadDir)
 	if err != nil {
 		return nil, err
 	}
+	fileArb := arb.New()
+	fileArb["name"] = m.Name
+	fileArb["type"] = "Link"
+	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Uploads, m.UUID, m.FileExt)
+	fileArb["mediaType"] = m.MimeType
 	objectArb, err := activitypub.FindProp(activityArb, "object", activitypub.AcceptHeaders)
 	if err != nil {
 		return activityArb, err
@@ -263,16 +267,19 @@ func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, nam
 	actor := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	activityArb["actor"] = actor
 	objectArb["attributedTo"] = actor
-
-	fileArb := arb.New()
-	fileArb["name"] = m.Name
-	fileArb["type"] = "Link"
-	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Uploads, m.UUID, m.FileExt)
-	fileArb["mediaType"] = m.MimeType
-
-	activityArb, err = s.repo.CreateOutboxMediaActivity(activityArb, objectArb, fileArb, name)
+	objectArb["url"] = []arb.Arb{fileArb}
+	activityArb, err = s.repo.CreateOutboxActivity(activityArb, objectArb, name)
 	if err != nil {
 		return activityArb, err
+	}
+	// Get recipients
+	recipients, err := activitypub.GetRecipients(activityArb, "to")
+	if err != nil {
+		log.Println(err)
+	}
+	// Deliver to recipients
+	for _, recipient := range recipients {
+		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb}
 	}
 	return activityArb, nil
 }

@@ -36,11 +36,14 @@ func main() {
 	// create repository
 	repo := repositories.NewPSQLRepository(conf, cache)
 	defer repo.Close()
+	// create file worker
+	fileWorker := workers.NewFileWorker(conf, repo)
+	go fileWorker.Start()
 	// create federation worker
-	worker := workers.NewFederationWorker(conf, repo)
-	go worker.Start()
+	fedWorker := workers.NewFederationWorker(conf, repo)
+	go fedWorker.Start()
 	// create service
-	service := services.NewActivityPubService(conf, repo, worker)
+	service := services.NewActivityPubService(conf, repo, fedWorker)
 	// create response writer
 	response := responses.NewActivityPubResponse(conf.Debug)
 	// create middleware helper

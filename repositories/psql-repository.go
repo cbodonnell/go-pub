@@ -820,16 +820,15 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 		return activityArb, err
 	}
 	// TODO: Code here to prevent duplicate objects???
-	// TODO: How to get audio file data in here?
-	// Need a related table for sources? <-- look at ap vocab
-	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to) 
-	VALUES ($1, $2, $3, $4) RETURNING id;`
+	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to, name) 
+	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
 	var object_id int
 	err = tx.QueryRow(ctx, sql,
 		objectArb["type"],
 		objectArb["content"],
 		objectArb["attributedTo"],
 		objectArb["inReplyTo"],
+		objectArb["name"],
 	).Scan(&object_id)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -843,6 +842,32 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 	if err != nil {
 		tx.Rollback(ctx)
 		return activityArb, err
+	}
+	if objectArb.Exists("url") {
+		fileArbs, err := objectArb.GetArbArray("url")
+		if err != nil {
+			tx.Rollback(ctx)
+			return activityArb, err
+		}
+		var urls []arb.Arb
+		for _, fileArb := range fileArbs {
+			sql = `INSERT INTO object_files (object_id, created, name, type, href, media_type) 
+			VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5);`
+			// TODO: return id to populate file iri
+			_, err = tx.Exec(ctx, sql,
+				object_id,
+				fileArb["name"],
+				fileArb["type"],
+				fileArb["href"],
+				fileArb["mediaType"],
+			)
+			if err != nil {
+				tx.Rollback(ctx)
+				return activityArb, err
+			}
+			urls = append(urls, fileArb)
+		}
+		objectArb["url"] = urls
 	}
 	sql = `INSERT INTO activities (type, actor, object_id)
 	VALUES ($1, $2, $3) RETURNING id;`
@@ -1156,74 +1181,8 @@ func (r *PSQLRepository) getActorsSendingObjectID(object_id int) ([]string, erro
 	return actors, nil
 }
 
-func (r *PSQLRepository) CreateOutboxMediaActivity(activityArb arb.Arb, objectArb arb.Arb, fileArb arb.Arb, name string) (arb.Arb, error) {
-	ctx := context.Background()
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return activityArb, err
-	}
-	sql := `INSERT INTO objects (type, content, attributed_to, in_reply_to, name) 
-	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
-	var object_id int
-	err = tx.QueryRow(ctx, sql,
-		objectArb["type"],
-		objectArb["content"],
-		objectArb["attributedTo"],
-		objectArb["inReplyTo"],
-		objectArb["name"],
-	).Scan(&object_id)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
-	}
-	objectArb["id"] = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Objects, object_id)
-	sql = `UPDATE objects
-	SET iri = $1
-	WHERE id = $2;`
-	_, err = tx.Exec(ctx, sql, objectArb["id"], object_id)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
-	}
-	sql = `INSERT INTO object_files (object_id, name, type, href, media_type) 
-	VALUES ($1, $2, $3, $4, $5);`
-	_, err = tx.Exec(ctx, sql,
-		object_id,
-		fileArb["name"],
-		fileArb["type"],
-		fileArb["href"],
-		fileArb["mediaType"],
-	)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
-	}
-	objectArb["url"] = []arb.Arb{fileArb}
-	sql = `INSERT INTO activities (type, actor, object_id)
-	VALUES ($1, $2, $3) RETURNING id;`
-	var activity_id int
-	err = tx.QueryRow(ctx, sql, activityArb["type"], activityArb["actor"], object_id).Scan(&activity_id)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
-	}
-	activityArb["id"] = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Activities, activity_id)
-	sql = `UPDATE activities
-	SET iri = $1
-	WHERE id = $2;`
-	_, err = tx.Exec(ctx, sql, activityArb["id"], activity_id)
-	if err != nil {
-		tx.Rollback(ctx)
-		return activityArb, err
-	}
-	tx.Commit(ctx)
-	if err != nil {
-		return nil, err
-	}
-	err = r.cache.Del(fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name))
-	if err != nil {
-		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("outbox-%s-*", name), fmt.Sprintf("outbox-totalItems-%s", name)))
-	}
-	// TODO: Invalidate other cache items based on activityArb["type"]
-	return activityArb, nil
+func (r *PSQLRepository) PurgeUnusedFiles() error {
+	// TODO: Implement this
+	// Need to somehow determine if a file on disk is orphaned
+	return nil
 }

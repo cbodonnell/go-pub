@@ -30,5 +30,5 @@ type Repository interface {
 	ActivityToExists(activityIRI string, recipientIRI string) bool
 	AddActivityTo(activityIRI string, recipient string) error
 	DeleteActivity(activityArb arb.Arb, name string) (arb.Arb, error)
-	CreateOutboxMediaActivity(activityArb arb.Arb, objectArb arb.Arb, fileArb arb.Arb, name string) (arb.Arb, error)
+	PurgeUnusedFiles() error
 }
