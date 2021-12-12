@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/cheebz/arb"
+	"github.com/cheebz/go-pub/media"
 	"github.com/cheebz/go-pub/models"
 )
 
@@ -25,4 +26,5 @@ type Service interface {
 	GetObject(ID int) (models.Object, error)
 	SaveInboxActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	SaveOutboxActivity(activityArb arb.Arb, name string) (arb.Arb, error)
+	UploadMedia(activityArb arb.Arb, m media.Media, name string) (arb.Arb, error)
 }

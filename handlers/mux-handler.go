@@ -3,13 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/cheebz/go-pub/activitypub"
 	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/media"
 	"github.com/cheebz/go-pub/middleware"
 	"github.com/cheebz/go-pub/resources"
 	"github.com/cheebz/go-pub/responses"
@@ -75,21 +74,18 @@ func (h *MuxHandler) setupRoutes() {
 	aPost.Use(jwtUsernameMiddleware)
 	aPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.endpoints.Users, nameParam, h.endpoints.Outbox), h.PostOutbox).Methods("POST", "OPTIONS")
 
-	// TODO: Add /uploadMedia endpoint for POSTing
-	upload := h.router.NewRoute().Subrouter() // -> webfinger
-	upload.Use(jwtUsernameMiddleware)
-	upload.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/endpoints/uploadMedia", h.endpoints.Users, nameParam), h.UploadMedia).Methods("POST", "OPTIONS")
+	uPost := h.router.NewRoute().Subrouter() // -> webfinger
+	uPost.Use(jwtUsernameMiddleware)
+	uPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/endpoints/uploadMedia", h.endpoints.Users, nameParam), h.UploadMedia).Methods("POST", "OPTIONS")
 
-	// TODO: Add /media endpoint for GETting
+	uGet := h.router.NewRoute().Subrouter() // -> webfinger
+	// TODO: Get uploads url from endpoints configuration
+	uGet.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
 
 	sink := h.router.NewRoute().Subrouter() // -> sink to handle all other routes
 	sink.Use(h.middleware.AcceptMiddleware)
 	sink.PathPrefix("/").HandlerFunc(h.SinkHandler).Methods("GET", "OPTIONS")
 
-	// Static files
-	// TODO: Static files
-	// r.PathPrefix(fmt.Sprintf("/files/{%s:[[:alnum:]]+}/", nameParam)).Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./static/"))))
-	// r.Use(jwtUsernameMiddleware)
 }
 
 func (h *MuxHandler) GetRouter() http.Handler {
@@ -400,88 +396,39 @@ func (h *MuxHandler) PostOutbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MuxHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
-	// name := mux.Vars(r)[nameParam]
+	name := mux.Vars(r)[nameParam]
 	err := activitypub.CheckUploadContentType(r.Header)
 	if err != nil {
 		h.response.BadRequest(w, err)
 		return
 	}
-
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		h.response.BadRequest(w, err)
 		return
 	}
-
 	activityArb, err := activitypub.ParsePayload([]byte(r.FormValue("object")))
 	if err != nil {
 		h.response.BadRequest(w, err)
 		return
 	}
-	fmt.Printf("objectArb: %s\n", activityArb.ToString())
-
-	// TODO: Create a ParseFile method
-	file, header, err := r.FormFile("file")
+	file, err := media.ParseMedia(r, "file")
 	if err != nil {
 		h.response.BadRequest(w, err)
 		return
 	}
-
-	fmt.Printf("file size: %d\n", header.Size)
-	if header.Size > 15*1024*1024 {
-		h.response.BadRequest(w, fmt.Errorf("file too large"))
-		return
-	}
-	defer file.Close()
-
-	buff := make([]byte, 512)
-	_, err = file.Read(buff)
-	if err != nil {
-		h.response.BadRequest(w, err)
-		return
-	}
-
-	filetype := http.DetectContentType(buff)
-	fmt.Printf("file type: %s\n", filetype)
-	if filetype != "audio/mpeg" {
-		h.response.BadRequest(w, fmt.Errorf("invalid file type %s", filetype))
-		return
-	}
-
-	_, err = file.Seek(0, io.SeekStart)
+	// defer file.Close()
+	activityArb, err = h.service.UploadMedia(activityArb, file, name)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
 	}
-
-	// TODO: Create a SaveFile method
-	err = os.MkdirAll("./uploads", os.ModePerm)
-	if err != nil {
-		h.response.InternalServerError(w, err)
-		return
-	}
-
-	f, err := os.Create(fmt.Sprintf("./uploads/%s", header.Filename))
-	if err != nil {
-		h.response.InternalServerError(w, err)
-		return
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// TODO: Save activity (with url reference to file)
-
 	w.Header().Set("Content-Type", activitypub.ContentType)
-	// iri, err := activityArb.GetString("id")
-	// if err != nil {
-	// 	h.response.InternalServerError(w, err)
-	// 	return
-	// }
-	h.response.Created(w, "http://example.com/iri")
+	iri, err := activityArb.GetString("id")
+	if err != nil {
+		h.response.InternalServerError(w, err)
+		return
+	}
+	h.response.Created(w, iri)
 	activityArb.Write(w)
 }
 

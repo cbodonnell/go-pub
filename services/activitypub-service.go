@@ -8,6 +8,7 @@ import (
 	"github.com/cheebz/arb"
 	"github.com/cheebz/go-pub/activitypub"
 	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/media"
 	"github.com/cheebz/go-pub/models"
 	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/go-pub/workers"
@@ -245,6 +246,34 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 	// Deliver to recipients
 	for _, recipient := range recipients {
 		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb}
+	}
+	return activityArb, nil
+}
+
+func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, name string) (arb.Arb, error) {
+	// TODO: Save file to disk, creating uuid
+	err := m.Save()
+	if err != nil {
+		return nil, err
+	}
+	objectArb, err := activitypub.FindProp(activityArb, "object", activitypub.AcceptHeaders)
+	if err != nil {
+		return activityArb, err
+	}
+	actor := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
+	activityArb["actor"] = actor
+	objectArb["attributedTo"] = actor
+
+	fileArb := arb.New()
+	fileArb["name"] = m.Name
+	fileArb["type"] = "Link"
+	// TODO: Incorporate uploads endpoing into configuration
+	fileArb["href"] = fmt.Sprintf("%s://%s/%s/%s%s", s.conf.Protocol, s.conf.ServerName, "uploads", m.UUID, m.FileExt)
+	fileArb["mediaType"] = m.MimeType
+
+	activityArb, err = s.repo.CreateOutboxMediaActivity(activityArb, objectArb, fileArb, name)
+	if err != nil {
+		return activityArb, err
 	}
 	return activityArb, nil
 }

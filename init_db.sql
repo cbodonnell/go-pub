@@ -32,6 +32,7 @@ BEGIN
 	CREATE TABLE IF NOT EXISTS public.object_files (
 		id serial NOT NULL,
 		object_id int4 NOT NULL,
+		"name" text NOT NULL,
 		"type" text NOT NULL,
 		href text NOT NULL,
 		media_type text NOT NULL,
