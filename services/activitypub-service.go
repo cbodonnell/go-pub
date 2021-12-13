@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path"
 
 	"github.com/cheebz/arb"
 	"github.com/cheebz/go-pub/activitypub"
@@ -127,11 +128,6 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 	}
 	recipient := fmt.Sprintf("%s://%s/%s/%s", s.conf.Protocol, s.conf.ServerName, s.conf.Endpoints.Users, name)
 	switch activityType {
-	// case "Create":
-	// 	_, err = s.repo.CreateInboxActivity(activityArb, objectArb, actorIRI.String(), name)
-	// 	if err != nil {
-	// 		return activityArb, err
-	// 	}
 	case "Create", "Announce", "Like", "Undo", "Accept":
 		_, err = s.repo.CreateInboxReferenceActivity(activityArb, objectIRI.String(), actorIRI.String(), name)
 		if err != nil {
@@ -168,7 +164,7 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 		if err != nil {
 			return activityArb, err
 		}
-		// Replace activity with Tombstone (or delete all together?)
+		// Replace object with Tombstone (or delete all together?)
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}
@@ -233,18 +229,25 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 		if actor != attributedTo {
 			return activityArb, errors.New("not your object")
 		}
+		objectIRI, err := activitypub.GetIRI(objectArb)
+		if err != nil {
+			return activityArb, err
+		}
+		hrefs, err := s.repo.GetObjectFilesByIRI(objectIRI.String())
+		if err != nil {
+			return activityArb, err
+		}
 		activityArb, err = s.repo.DeleteActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err
 		}
-		// // TODO: Delete object files from disk
-		// objectIRI, err := activitypub.GetIRI(objectArb)
-		// if err != nil {
-		// 	return activityArb, err
-		// }
-		// Make repo method to GetObjectFiles(iri) returning []string of hrefs
-		// parse out file names to be deleted
-		// file := path.Base(href)
+		for _, href := range hrefs {
+			file := path.Base(href)
+			err = media.Delete(s.conf.UploadDir + file)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	default:
 		return activityArb, errors.New("unsupported activity type")
 	}

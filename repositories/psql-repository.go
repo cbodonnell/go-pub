@@ -328,8 +328,7 @@ func (r *PSQLRepository) queryObjectByIRI(iri string) (models.Object, error) {
 		if err != nil {
 			return object, err
 		}
-		// TODO: Add links endpoint to config
-		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
+		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Links, link_id)
 		links = append(links, link)
 	}
 	if links != nil {
@@ -341,6 +340,38 @@ func (r *PSQLRepository) queryObjectByIRI(iri string) (models.Object, error) {
 	}
 
 	return object, nil
+}
+
+func (r *PSQLRepository) queryLinksByObjectID(id int) ([]models.Link, error) {
+	var links []models.Link
+	sql := `SELECT id, type, href, media_type
+	FROM object_files
+	WHERE object_id = $1`
+	rows, err := r.db.Query(context.Background(), sql, id)
+	if err != nil {
+		return links, err
+	}
+	defer rows.Close()
+	err = rows.Err()
+	if err != nil {
+		return links, err
+	}
+	for rows.Next() {
+		link := models.NewLink()
+		var link_id int
+		err = rows.Scan(
+			&link_id,
+			&link.Type,
+			&link.Href,
+			&link.MediaType,
+		)
+		if err != nil {
+			return links, err
+		}
+		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Links, link_id)
+		links = append(links, link)
+	}
+	return links, nil
 }
 
 func (r *PSQLRepository) queryToByActivityId(activity_id int) ([]string, error) {
@@ -646,41 +677,13 @@ func (r *PSQLRepository) QueryObject(id int) (models.Object, error) {
 	if err != nil {
 		return object, err
 	}
-
-	// TODO: Refactor to queryLinksByObjectID
-	sql = `SELECT id, type, href, media_type
-	FROM object_files
-	WHERE object_id = $1`
-	rows, err := r.db.Query(context.Background(), sql, id)
+	links, err := r.queryLinksByObjectID(id)
 	if err != nil {
 		return object, err
-	}
-	defer rows.Close()
-	var links []models.Link
-	for rows.Next() {
-		link := models.NewLink()
-		var link_id int
-		err = rows.Scan(
-			&link_id,
-			&link.Type,
-			&link.Href,
-			&link.MediaType,
-		)
-		if err != nil {
-			return object, err
-		}
-		// TODO: Add links endpoint to config
-		link.Id = fmt.Sprintf("%s://%s/%s/%d", r.conf.Protocol, r.conf.ServerName, "links", link_id)
-		links = append(links, link)
 	}
 	if links != nil {
 		object.Url = links
 	}
-	err = rows.Err()
-	if err != nil {
-		return object, err
-	}
-
 	err = r.cache.Set(fmt.Sprintf("object-%d", id), object)
 	if err != nil {
 		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("object-%d", id)))
@@ -856,7 +859,7 @@ func (r *PSQLRepository) CreateOutboxActivity(activityArb arb.Arb, objectArb arb
 		var urls []arb.Arb
 		for _, fileArb := range fileArbs {
 			sql = `INSERT INTO object_files (object_id, created, name, uuid, type, href, media_type) 
-			VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5);`
+			VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6);`
 			// TODO: return id to populate file iri
 			_, err = tx.Exec(ctx, sql,
 				object_id,
@@ -1192,6 +1195,33 @@ func (r *PSQLRepository) getActorsSendingObjectID(object_id int) ([]string, erro
 		return actors, err
 	}
 	return actors, nil
+}
+
+func (r *PSQLRepository) GetObjectFilesByIRI(objectIRI string) ([]string, error) {
+	sql := `SELECT f.href
+	FROM object_files AS f
+	JOIN objects AS obj ON obj.id = f.object_id
+	WHERE obj.iri = $1`
+
+	rows, err := r.db.Query(context.Background(), sql, objectIRI)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var hrefs []string
+	err = rows.Err()
+	if err != nil {
+		return hrefs, err
+	}
+	for rows.Next() {
+		var href string
+		err = rows.Scan(&href)
+		if err != nil {
+			return hrefs, err
+		}
+		hrefs = append(hrefs, href)
+	}
+	return hrefs, nil
 }
 
 func (r *PSQLRepository) PurgeUnusedFiles() error {

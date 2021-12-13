@@ -3,6 +3,7 @@ package media
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -55,6 +56,11 @@ func ParseMedia(r *http.Request, name string) (Media, error) {
 	}
 
 	return m, nil
+}
+
+func Delete(path string) error {
+	log.Printf("deleting: %s\n", path)
+	return os.Remove(path)
 }
 
 func (m *Media) Save(dir string) error {
