@@ -12,20 +12,19 @@ import (
 	"github.com/cheebz/go-pub/media"
 	"github.com/cheebz/go-pub/models"
 	"github.com/cheebz/go-pub/repositories"
-	"github.com/cheebz/go-pub/workers"
 )
 
 type ActivityPubService struct {
-	conf   config.Configuration
-	repo   repositories.Repository
-	worker workers.Worker
+	conf      config.Configuration
+	repo      repositories.Repository
+	federator activitypub.Federator
 }
 
-func NewActivityPubService(_conf config.Configuration, _repo repositories.Repository, _worker workers.Worker) Service {
+func NewActivityPubService(_conf config.Configuration, _repo repositories.Repository, _federator activitypub.Federator) Service {
 	return &ActivityPubService{
-		conf:   _conf,
-		repo:   _repo,
-		worker: _worker,
+		conf:      _conf,
+		repo:      _repo,
+		federator: _federator,
 	}
 }
 
@@ -150,7 +149,7 @@ func (s *ActivityPubService) SaveInboxActivity(activityArb arb.Arb, name string)
 		if err != nil {
 			return activityArb, err
 		}
-		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb}
+		go s.federator.Federate(models.Federation{Name: name, Recipient: actorIRI.String(), Activity: responseArb})
 	case "Delete":
 		// TODO: DeleteActivity
 		attributedTo, err := objectArb.GetString("attributedTo")
@@ -214,7 +213,7 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 			if err != nil {
 				return activityArb, err
 			}
-			s.worker.GetChannel() <- models.Federation{Name: name, Recipient: actor, Activity: responseArb}
+			go s.federator.Federate(models.Federation{Name: name, Recipient: actor, Activity: responseArb})
 		}
 	case "Like", "Undo":
 		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
@@ -258,7 +257,7 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 	}
 	// Deliver to recipients
 	for _, recipient := range recipients {
-		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb}
+		go s.federator.Federate(models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb})
 	}
 	return activityArb, nil
 }
@@ -293,7 +292,7 @@ func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, nam
 	}
 	// Deliver to recipients
 	for _, recipient := range recipients {
-		s.worker.GetChannel() <- models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb}
+		go s.federator.Federate(models.Federation{Name: name, Recipient: recipient.String(), Activity: activityArb})
 	}
 	return activityArb, nil
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cheebz/go-pub/activitypub"
 	"github.com/cheebz/go-pub/cache"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/handlers"
@@ -39,11 +40,10 @@ func main() {
 	// create file worker
 	fileWorker := workers.NewFileWorker(conf, repo)
 	go fileWorker.Start()
-	// create federation worker
-	fedWorker := workers.NewFederationWorker(conf, repo)
-	go fedWorker.Start()
+	// create federator
+	federator := activitypub.NewFederator(conf, repo)
 	// create service
-	service := services.NewActivityPubService(conf, repo, fedWorker)
+	service := services.NewActivityPubService(conf, repo, federator)
 	// create response writer
 	response := responses.NewActivityPubResponse(conf.Debug)
 	// create middleware helper

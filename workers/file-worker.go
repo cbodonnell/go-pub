@@ -16,7 +16,7 @@ type FileWorker struct {
 }
 
 func NewFileWorker(_conf config.Configuration, _repo repositories.Repository) Worker {
-	return &FederationWorker{
+	return &FileWorker{
 		conf:    _conf,
 		repo:    _repo,
 		channel: make(chan interface{}),

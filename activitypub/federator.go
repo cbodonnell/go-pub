@@ -1,4 +1,4 @@
-package workers
+package activitypub
 
 import (
 	"bytes"
@@ -8,48 +8,32 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/cheebz/go-pub/activitypub"
 	"github.com/cheebz/go-pub/config"
 	"github.com/cheebz/go-pub/models"
 	"github.com/cheebz/go-pub/repositories"
 	"github.com/cheebz/sigs"
 )
 
-type FederationWorker struct {
-	conf    config.Configuration
-	repo    repositories.Repository
-	channel chan interface{}
+type Federator struct {
+	conf config.Configuration
+	repo repositories.Repository
 }
 
-func NewFederationWorker(_conf config.Configuration, _repo repositories.Repository) Worker {
-	return &FederationWorker{
-		conf:    _conf,
-		repo:    _repo,
-		channel: make(chan interface{}),
+func NewFederator(_conf config.Configuration, _repo repositories.Repository) Federator {
+	return Federator{
+		conf: _conf,
+		repo: _repo,
 	}
 }
 
-func (f *FederationWorker) Start() {
-	for {
-		item := <-f.channel
-		if fed, ok := item.(models.Federation); ok {
-			f.federate(fed)
-		}
-	}
-}
-
-func (f *FederationWorker) GetChannel() chan interface{} {
-	return f.channel
-}
-
-func (f *FederationWorker) federate(fed models.Federation) {
+func (f *Federator) Federate(fed models.Federation) {
 	log.Println(fmt.Sprintf("Federating to %s", fed.Recipient))
-	recipient, err := activitypub.Find(fed.Recipient, activitypub.AcceptHeaders)
+	recipient, err := Find(fed.Recipient, AcceptHeaders)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	recipientType, err := activitypub.GetType(recipient)
+	recipientType, err := GetType(recipient)
 	if err != nil {
 		log.Println(err)
 		return
@@ -58,12 +42,12 @@ func (f *FederationWorker) federate(fed models.Federation) {
 
 	switch recipientType {
 	case "Person", "Service":
-		activityIRI, err := activitypub.GetIRI(fed.Activity)
+		activityIRI, err := GetIRI(fed.Activity)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		recipientIRI, err := activitypub.GetIRI(recipient)
+		recipientIRI, err := GetIRI(recipient)
 		if err != nil {
 			log.Println(err)
 			return
@@ -100,11 +84,11 @@ func (f *FederationWorker) federate(fed models.Federation) {
 					log.Println(fmt.Sprintf("unable to federate to: %s", fed.Recipient))
 				}
 				fed.Recipient = next
-				f.federate(fed)
+				f.Federate(fed)
 				return
 			}
 			fed.Recipient = first
-			f.federate(fed)
+			f.Federate(fed)
 			return
 		}
 		log.Println(fmt.Sprintf("retrieved orderedItems from %s", fed.Recipient))
@@ -117,7 +101,7 @@ func (f *FederationWorker) federate(fed models.Federation) {
 		}
 		for _, item := range items {
 			fed.Recipient = item
-			f.federate(fed)
+			f.Federate(fed)
 		}
 		return
 	default:
@@ -126,13 +110,13 @@ func (f *FederationWorker) federate(fed models.Federation) {
 	}
 }
 
-func (f *FederationWorker) post(fed models.Federation, inbox string) {
+func (f *Federator) post(fed models.Federation, inbox string) {
 	req, err := http.NewRequest("POST", inbox, bytes.NewBuffer(fed.Activity.ToBytes()))
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	req.Header.Add("Content-Type", activitypub.ContentType)
+	req.Header.Add("Content-Type", ContentType)
 
 	keyID := fmt.Sprintf("%s://%s/%s/%s#main-key", f.conf.Protocol, f.conf.ServerName, f.conf.Endpoints.Users, fed.Name)
 	err = sigs.SignRequest(req, fed.Activity.ToBytes(), f.conf.RSAPrivateKey, keyID)
