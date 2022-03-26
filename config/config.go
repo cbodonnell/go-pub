@@ -29,6 +29,7 @@ var (
 		"ENDPOINT_UPLOAD_MEDIA": "uploadMedia",
 		"ENDPOINT_UPLOADS":      "uploads",
 		"ENDPOINT_LINKS":        "links",
+		"ENDPOINT_CHECK":        "check",
 		"UPLOAD_DIR":            "./uploads/",
 		"SSL_CERT":              "",
 		"SSL_KEY":               "",
@@ -89,6 +90,7 @@ type Endpoints struct {
 	UploadMedia string `mapstructure:"ENDPOINT_UPLOAD_MEDIA"`
 	Uploads     string `mapstructure:"ENDPOINT_UPLOADS"`
 	Links       string `mapstructure:"ENDPOINT_LINKS"`
+	Check       string `mapstructure:"ENDPOINT_CHECK"`
 }
 
 // DataSource struct

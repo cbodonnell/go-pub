@@ -8,4 +8,5 @@ type Resource interface {
 	GenerateActor(name string) models.Actor
 	GenerateOrderedCollection(name string, endpoint string, totalItems int) models.OrderedCollection
 	GenerateOrderedCollectionPage(name string, endpoint string, orderedItems []interface{}, pageNum int) models.OrderedCollectionPage
+	GenerateCheckResponse(activityIRI string) models.CheckResponse
 }

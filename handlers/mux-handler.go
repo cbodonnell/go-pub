@@ -74,12 +74,16 @@ func (h *MuxHandler) setupRoutes() {
 	aPost.Use(jwtUsernameMiddleware)
 	aPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Outbox), h.PostOutbox).Methods("POST", "OPTIONS")
 
-	uPost := h.router.NewRoute().Subrouter() // -> webfinger
+	uPost := h.router.NewRoute().Subrouter() // -> authenticated uploads POST
 	uPost.Use(jwtUsernameMiddleware)
 	uPost.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.UploadMedia), h.UploadMedia).Methods("POST", "OPTIONS")
 
-	uGet := h.router.NewRoute().Subrouter() // -> webfinger
+	uGet := h.router.NewRoute().Subrouter() // -> authenticated uploads GET
 	uGet.PathPrefix(fmt.Sprintf("/%s/", h.conf.Endpoints.Uploads)).Handler(http.StripPrefix(fmt.Sprintf("/%s/", h.conf.Endpoints.Uploads), http.FileServer(http.Dir(h.conf.UploadDir))))
+
+	cGet := h.router.NewRoute().Subrouter() // -> authenticated checks GET
+	uPost.Use(jwtUsernameMiddleware)
+	cGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Check), h.CheckActivity).Methods("GET", "OPTIONS")
 
 	sink := h.router.NewRoute().Subrouter() // -> sink to handle all other routes
 	sink.Use(h.middleware.AcceptMiddleware)
@@ -428,6 +432,16 @@ func (h *MuxHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	h.response.Created(w, iri)
 	activityArb.Write(w)
+}
+
+func (h *MuxHandler) CheckActivity(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)[nameParam]
+	activityType := r.FormValue("activity")
+	objectIRI := r.FormValue("object")
+	activityIRI := h.service.CheckActivity(name, activityType, objectIRI)
+	checkResponse := h.resource.GenerateCheckResponse(activityIRI)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(checkResponse)
 }
 
 func (h *MuxHandler) SinkHandler(w http.ResponseWriter, r *http.Request) {

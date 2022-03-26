@@ -204,3 +204,8 @@ type Federation struct {
 	Recipient string
 	Activity  arb.Arb
 }
+
+type CheckResponse struct {
+	Exists      bool   `json:"exists"`
+	ActivityIRI string `json:"iri"`
+}

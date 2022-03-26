@@ -32,4 +32,5 @@ type Repository interface {
 	DeleteActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	GetObjectFilesByIRI(objectIRI string) ([]string, error)
 	PurgeUnusedFiles() error
+	CheckActivity(name string, activityType string, objectIRI string) string
 }

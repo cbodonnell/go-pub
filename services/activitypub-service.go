@@ -296,3 +296,7 @@ func (s *ActivityPubService) UploadMedia(activityArb arb.Arb, m media.Media, nam
 	}
 	return activityArb, nil
 }
+
+func (s *ActivityPubService) CheckActivity(name string, activityType string, objectIRI string) string {
+	return s.repo.CheckActivity(name, activityType, objectIRI)
+}

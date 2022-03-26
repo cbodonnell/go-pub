@@ -1229,3 +1229,23 @@ func (r *PSQLRepository) PurgeUnusedFiles() error {
 	// Need to somehow determine if a file on disk is orphaned
 	return nil
 }
+
+func (r *PSQLRepository) CheckActivity(name string, activityType string, objectIRI string) string {
+	sql := `SELECT act.iri FROM activities act
+	JOIN objects obj ON obj.id = act.object_id
+	WHERE act.actor = $1
+	AND act.type = $2
+	AND act.iri NOT IN (
+		SELECT obj.iri FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Undo'
+	)
+	AND obj.iri = $3`
+	var iri string
+	_ = r.db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		activityType,
+		objectIRI,
+	).Scan(&iri)
+	return iri
+}

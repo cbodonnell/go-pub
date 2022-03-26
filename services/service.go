@@ -27,4 +27,5 @@ type Service interface {
 	SaveInboxActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	SaveOutboxActivity(activityArb arb.Arb, name string) (arb.Arb, error)
 	UploadMedia(activityArb arb.Arb, m media.Media, name string) (arb.Arb, error)
+	CheckActivity(name string, activityType string, objectIRI string) string
 }

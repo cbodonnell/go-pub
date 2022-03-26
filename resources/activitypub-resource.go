@@ -139,3 +139,10 @@ func (r *ActivityPubResource) GenerateOrderedCollectionPage(name string, endpoin
 	}
 	return page
 }
+
+func (r *ActivityPubResource) GenerateCheckResponse(activityIRI string) models.CheckResponse {
+	return models.CheckResponse{
+		Exists:      activityIRI != "",
+		ActivityIRI: activityIRI,
+	}
+}
