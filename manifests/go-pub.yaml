@@ -4,8 +4,8 @@ metadata:
   name: go-pub-config
 data:
   db_host: go-pub-postgres-service
-  redis_host: go-pub-redis-service # TODO: Create this
-  auth_endpoint: go-pub-auth-service # TODO: Create this
+  redis_host: go-pub-redis-service
+  auth_endpoint: http://go-auth-service/auth/
   client_endpoint: go-pub-client-service # TODO: Create this
   rsa_public_key: /etc/rsa/public.pem
   rsa_private_key: /etc/rsa/private.pem
@@ -37,6 +37,11 @@ spec:
         ports:
         - containerPort: 80
         env:
+        - name: AUTH
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-config
+              key: auth_endpoint
         - name: DB_HOST
           valueFrom: 
             configMapKeyRef:
@@ -86,7 +91,7 @@ spec:
         - name: go-pub-rsa-volume
           readOnly: true
           mountPath: "/etc/rsa"
-        - name: go-pub-rsa-volume
+        - name: go-pub-uploads-volume
           readOnly: true
           mountPath: "/data/uploads"
       volumes:
@@ -110,5 +115,5 @@ spec:
   type: ClusterIP
   ports:
     - protocol: TCP
-      port: 8080
+      port: 80
       targetPort: 80
