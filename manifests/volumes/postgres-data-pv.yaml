@@ -3,7 +3,7 @@ kind: PersistentVolume
 metadata:
   name: go-pub-postgres-data-volume
   labels:
-    type: postgres
+    app: go-pub-postgres
 spec:
   accessModes:
     - ReadWriteMany

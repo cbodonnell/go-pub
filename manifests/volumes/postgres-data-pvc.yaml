@@ -10,4 +10,4 @@ spec:
       storage: 500Mi
   selector:
     matchLabels:
-      type: postgres
+      app: go-pub-postgres
