@@ -1,0 +1,31 @@
+apiVersion: v1
+data:
+  init_db.sql: "-- Initialization Script\n\n-- Create tables\n\n-- public.users definition\n\nDO
+    $$\nBEGIN\n\n\tCREATE TABLE IF NOT EXISTS public.users (\n\t\tid serial NOT NULL,\n\t\t\"name\"
+    text NOT NULL,\n\t\tdiscoverable bool NOT NULL,\n\t\tiri text NOT NULL,\n\t\tCONSTRAINT
+    users_pkey PRIMARY KEY (id)\n\t);\n\n\t-- public.objects definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.objects (\n\t\tid serial NOT NULL,\n\t\t\"type\" text
+    NULL,\n\t\tiri text NULL,\n\t\t\"content\" text NULL,\n\t\tattributed_to text
+    NULL,\n\t\tin_reply_to text NULL,\n\t\t\"name\" text NULL,\n\t\tCONSTRAINT objects_pkey
+    PRIMARY KEY (id)\n\t);\n\n\t-- public.object_files definition\n\n\tCREATE TABLE
+    IF NOT EXISTS public.object_files (\n\t\tid serial NOT NULL,\n\t\tobject_id int4
+    NOT NULL,\n\t\tcreated timestamptz NOT NULL,\n\t\t\"name\" text NOT NULL,\n\t\tuuid
+    text NOT NULL,\n\t\t\"type\" text NOT NULL,\n\t\thref text NOT NULL,\n\t\tmedia_type
+    text NOT NULL,\n\t\tCONSTRAINT object_files_pkey PRIMARY KEY (id)\n\t);\n\n\tALTER
+    TABLE public.object_files DROP CONSTRAINT IF EXISTS object_files_object_id_fk;\n\tALTER
+    TABLE public.object_files ADD CONSTRAINT object_files_object_id_fk FOREIGN KEY
+    (object_id) REFERENCES public.objects(id);\n\n\t-- public.activities definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.activities (\n\t\tid serial NOT NULL,\n\t\t\"type\"
+    text NOT NULL,\n\t\tactor text NOT NULL,\n\t\tobject_id int4 NOT NULL,\n\t\tiri
+    text NULL,\n\t\tCONSTRAINT outbox_activities_pkey PRIMARY KEY (id)\n\t);\n\n\tALTER
+    TABLE public.activities DROP CONSTRAINT IF EXISTS activities_object_id_fk;\n\tALTER
+    TABLE public.activities ADD CONSTRAINT activities_object_id_fk FOREIGN KEY (object_id)
+    REFERENCES public.objects(id);\n\n\t-- public.activities_to definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.activities_to (\n\t\tid serial NOT NULL,\n\t\tactivity_id
+    int4 NOT NULL,\n\t\tiri text NOT NULL,\n\t\tCONSTRAINT outbox_to_pkey PRIMARY
+    KEY (id)\n\t);\n\n\tALTER TABLE public.activities_to DROP CONSTRAINT IF EXISTS
+    activities_to_activity_id_fk;\n\tALTER TABLE public.activities_to ADD CONSTRAINT
+    activities_to_activity_id_fk FOREIGN KEY (activity_id) REFERENCES public.activities(id);\n\nEND\n$$\n\n"
+kind: ConfigMap
+metadata:
+  name: go-pub-postgres-initdb
