@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ap-localhost
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: go-auth-service
+            port:
+              number: 80 
+        path: /(auth.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: pancors-service
+            port:
+              number: 80 
+        path: /proxy/(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: go-pub-service
+            port:
+              number: 80 
+        path: /(.*)
+        pathType: Prefix
+status:
+  loadBalancer: {}
