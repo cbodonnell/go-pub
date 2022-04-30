@@ -28,3 +28,6 @@ See **.env.example** for an example configuration.
 Container image can be created by running `docker build -t cheebz/go-pub .` or `docker build -t cheebz/go-pub -f Dockerfile.prod .`
 
 Docker-compose files are available that include PostgreSQL and Redis images.
+
+# Kubernetes
+Currently in the process of developing a helm chart for easy deployment of the entire microservice application on Kubernetes.
