@@ -32,7 +32,7 @@ func main() {
 	cache := cache.NewRedisCache(conf)
 	err = cache.FlushDB()
 	if err != nil {
-		log.Println(err)
+		log.Println("failed to flush cache:", err)
 	}
 	// create repository
 	repo := repositories.NewPSQLRepository(conf, cache)

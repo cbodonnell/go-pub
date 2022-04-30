@@ -45,6 +45,8 @@ func NewMuxHandler(_config config.Configuration, _middleware middleware.Middlewa
 }
 
 func (h *MuxHandler) setupRoutes() {
+	h.router.HandleFunc("/healthz", h.HealthCheck).Methods("GET", "OPTIONS")
+
 	wf := h.router.NewRoute().Subrouter() // -> webfinger
 	wf.HandleFunc("/.well-known/webfinger", h.GetWebFinger).Methods("GET", "OPTIONS")
 
@@ -57,6 +59,7 @@ func (h *MuxHandler) setupRoutes() {
 	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Following), h.GetFollowing).Methods("GET", "OPTIONS")
 	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Followers), h.GetFollowers).Methods("GET", "OPTIONS")
 	get.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Liked), h.GetLiked).Methods("GET", "OPTIONS")
+	// TODO: These should have some level of auth since some activities/objects are private
 	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.conf.Endpoints.Activities), h.GetActivity).Methods("GET", "OPTIONS")
 	get.HandleFunc(fmt.Sprintf("/%s/{id}", h.conf.Endpoints.Objects), h.GetObject).Methods("GET", "OPTIONS")
 
@@ -98,6 +101,13 @@ func (h *MuxHandler) GetRouter() http.Handler {
 func (h *MuxHandler) AllowCORS(allowedOrigins []string) {
 	cors := h.middleware.CreateCORSMiddleware(allowedOrigins)
 	h.router.Use(cors)
+}
+
+func (h *MuxHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement a proper check (db, cache, etc)
+	response := "Healthy"
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *MuxHandler) GetWebFinger(w http.ResponseWriter, r *http.Request) {
