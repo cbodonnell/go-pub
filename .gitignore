@@ -13,6 +13,3 @@ uploads/*
 
 # Database volumes
 postgres-data/*
-
-# K8s secrets
-manifests/secrets/*
