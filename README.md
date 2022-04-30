@@ -31,3 +31,6 @@ Docker-compose files are available that include PostgreSQL and Redis images.
 
 ## Kubernetes
 Currently in the process of developing a helm chart for easy deployment of the entire microservice application on Kubernetes.
+
+## CI/CD
+Starting to set up CI/CD using webhooks
