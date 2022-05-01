@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-pub-client-config
+data:
+  auth_url: '"http://{{ .Values.serverName }}/auth"' # TODO: conditional SSL?
+  auth_hcaptcha: '"{{ .Values.authHcaptcha }}"'
+  auth_register: '"{{ .Values.authRegister }}"'
+  activity_url: '"http://{{ .Values.serverName }}"' # TODO: conditional SSL?
+  proxy_url: '"http://{{ .Values.serverName }}/proxy"' # TODO: conditional SSL?

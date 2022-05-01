@@ -1,0 +1,17 @@
+@import "../../variables.scss";
+
+.Footer {
+    display: flex;
+    justify-content: center;
+    height: 56px;
+    z-index: 10;
+    background-color: var(--dark-color);
+    box-shadow: $box-shadow-top;
+}
+
+@media only screen and (min-width: 768px) {
+    .Footer {
+      display: none;
+    }
+  }
+

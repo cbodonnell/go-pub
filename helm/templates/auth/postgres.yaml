@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-auth-postgres
+  labels:
+    app: go-auth-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-auth-postgres
+  template:
+    metadata:
+      labels:
+        app: go-auth-postgres
+    spec:
+      containers:
+      - name: go-auth-postgres
+        image: postgres:latest
+        resources: # TODO: Determine eventually
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom: 
+            secretKeyRef:
+              name: go-auth-postgres
+              key: db_name
+        - name: POSTGRES_USER
+          valueFrom: 
+            secretKeyRef:
+              name: go-auth-postgres
+              key: db_user
+        - name: POSTGRES_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: go-auth-postgres
+              key: db_password
+        volumeMounts:
+        - name: go-auth-postgres-data-volume
+          mountPath: "/var/lib/postgresql/data/"
+        - name: go-auth-postgres-initdb-volume
+          mountPath: "/docker-entrypoint-initdb.d/"
+      volumes:
+        - name: go-auth-postgres-initdb-volume
+          configMap:
+            name: go-auth-postgres-initdb
+        - name: go-auth-postgres-data-volume
+          persistentVolumeClaim:
+            claimName: go-auth-postgres-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: go-auth-postgres-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      app: go-auth-postgres
+---
+apiVersion: v1
+data:
+  init_db.sql: "-- Initialization Script\n\n\n-- public.users definition\nDO $$\nBEGIN\n\tCREATE
+    TABLE IF NOT EXISTS public.users (\n\t\tid serial NOT NULL,\n\t\tusername varchar
+    NOT NULL,\n\t\t\"password\" varchar NOT NULL,\n\t\tcreated timestamptz NOT NULL,\n\t\tuuid
+    text NOT NULL,\n\t\tCONSTRAINT users_pkey PRIMARY KEY (id)\n\t);\n\n\n\t-- public.\"groups\"
+    definition\n\n\tCREATE TABLE IF NOT EXISTS public.\"groups\" (\n\t\tid serial
+    NOT NULL,\n\t\t\"name\" varchar NOT NULL,\n\t\tCONSTRAINT groups_pkey PRIMARY
+    KEY (id)\n\t);\n\n\tIF NOT EXISTS (SELECT * FROM public.groups) THEN\n\t\tINSERT
+    INTO public.\"groups\" (\"name\") VALUES ('public'), ('admin');\n\tEND IF;\n\n\n\t--
+    public.user_refresh definition\n\n\tCREATE TABLE IF NOT EXISTS public.user_refresh
+    (\n\t\tid serial NOT NULL,\n\t\tuser_id int4 NOT NULL,\n\t\t\"jti\" text NOT NULL,\n\t\texpires
+    timestamptz NOT NULL,\n\t\tCONSTRAINT user_refresh_pkey PRIMARY KEY (id)\n\t);\n\n\t--
+    public.user_refresh foreign keys\n\tALTER TABLE public.user_refresh DROP CONSTRAINT
+    IF EXISTS fki_user_refresh_user_id;\n\tALTER TABLE public.user_refresh ADD CONSTRAINT
+    fki_user_refresh_user_id FOREIGN KEY (user_id) REFERENCES public.users(id);\n\n\n\t--
+    public.\"user_groups\" definition\n\n\tCREATE TABLE IF NOT EXISTS public.user_groups
+    (\n\t\tid serial NOT NULL,\n\t\tuser_id int4 NOT NULL,\n\t\tgroup_id int4 NOT
+    NULL,\n\t\tCONSTRAINT user_groups_pkey PRIMARY KEY (id)\n\t);\n\tCREATE INDEX
+    IF NOT EXISTS fki_user_groups_group_id ON public.user_groups USING btree (group_id);\n\tCREATE
+    INDEX IF NOT EXISTS fki_user_groups_user_id ON public.user_groups USING btree
+    (user_id);\n\n\t-- public.user_groups foreign keys\n\n\tALTER TABLE public.user_groups
+    DROP CONSTRAINT IF EXISTS user_groups_group_id;\n\tALTER TABLE public.user_groups
+    ADD CONSTRAINT user_groups_group_id FOREIGN KEY (group_id) REFERENCES public.\"groups\"(id);\n\tALTER
+    TABLE public.user_groups DROP CONSTRAINT IF EXISTS user_groups_user_id;\n\tALTER
+    TABLE public.user_groups ADD CONSTRAINT user_groups_user_id FOREIGN KEY (user_id)
+    REFERENCES public.users(id);\nEND\n$$\n\n\n"
+kind: ConfigMap
+metadata:
+  name: go-auth-postgres-initdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-auth-postgres-service
+spec:
+  selector:
+    app: go-auth-postgres
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

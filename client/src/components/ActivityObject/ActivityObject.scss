@@ -1,0 +1,35 @@
+@import '../../variables.scss';
+
+
+.ActivityObject-actor {
+    margin-bottom: 1rem;
+    display: flex;
+}
+
+.ActivityObject-actor-name {
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+.ActivityObject-show-replies-button {
+    margin-bottom: 1rem;
+}
+
+.ActivityObject-view-more {
+    text-align: center;
+}
+
+.ActivityObject-attachment-item {
+    margin-top: 18px;
+}
+
+.ActivityObject-attachment-image {
+    max-height: 28rem;
+    box-shadow: $box-shadow-center;
+    
+    border-radius: 10px;
+}
+
+.ActivityObject-replies {
+    padding: 0px 12px;
+}

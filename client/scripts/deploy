@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo rsync -av --progress ./build/ /var/www/social --delete

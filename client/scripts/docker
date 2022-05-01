@@ -1,0 +1,2 @@
+#!/bin/sh
+sudo ENV=$ENV docker run -d --env-file="$ENV.env" --network pub_net --name go-pub-client --restart unless-stopped cheebz/go-pub-client

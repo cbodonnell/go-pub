@@ -1,0 +1,29 @@
+@import '../../variables.scss';
+
+.Note-textarea {
+    height: 72px;
+    min-height: 36px;
+    max-height: 144px;
+    width: 100%;
+    border: 1px solid $dark-color;
+    border-radius: 5px;
+    padding: 6px;
+    // margin-top: 18px;
+    margin-bottom: 0;
+    background-color: $light-color;
+    color: $dark-color;
+    font-size: 16px;
+    box-shadow: $box-shadow-center;
+    // resize: none; 
+}
+
+.Note-buttons {
+    margin-top: -6px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+// .Note-clear-button {
+//     margin-left: 0;
+//     margin-right: 6px;
+// }

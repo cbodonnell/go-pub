@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    environment {
+        ENV='prod'
+    }
+    stages {
+        stage('build') {
+            steps {
+                echo 'building...'
+                sh 'sudo docker build -t cheebz/go-pub-client .'
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'testing...'
+            }
+        }
+        stage('deploy') {
+            steps {
+                echo 'deploying...'
+                sh 'sudo docker rm -f go-pub-client'
+                sh 'sudo ENV=$ENV docker run -d --env-file="$ENV.env" --network pub_net --name go-pub-client --restart unless-stopped cheebz/go-pub-client'
+            }
+        }
+    }
+    post {
+        cleanup {
+            deleteDir()
+        }
+    }
+}

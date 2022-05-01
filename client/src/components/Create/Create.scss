@@ -1,0 +1,86 @@
+@import "../../variables.scss";
+
+
+.Create-dialog .modal-content {
+    background-color: var(--dark-color);
+    color: var(--light-color);
+    box-shadow: $box-shadow-center;
+
+    .modal-header .close {
+        color: var(--light-color);
+        text-shadow: $text-shadow-center;
+    }
+}
+
+
+.Create-tab {
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--primary-color);
+}
+
+.Create-tab a {
+    background-color: transparent;
+    color: var(--light-color);
+    margin-right: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px !important;
+
+    svg {
+        height: 20px;
+        width: 20px;
+    }
+
+    @media only screen and (min-width: 768px) {
+        display: block;
+        padding: 6px 12px !important;
+    }
+}
+
+.Create-tab a:hover {
+    color: var(--secondary-color);
+}
+
+.Create-tab a.active {
+    background-color: var(--secondary-color) !important;
+    color: var(--dark-color) !important;
+    box-shadow: $box-shadow-center !important;
+}
+
+.Create-button {
+    margin: 10px;
+}
+
+@media only screen and (min-width: 768px) {
+    .Create-button {
+        margin: 0px 12px 0px 0px;
+    }
+}
+
+.Create-error {
+    color: red;
+}
+
+.Create-error,
+.Create-label {
+    margin: 6px 0px;
+}
+
+.Create-input {
+    border: 1px solid $dark-color;
+    border-radius: 5px;
+    padding: 6px;
+    margin-bottom: 6px;
+    background-color: $light-color;
+    color: $dark-color;
+    font-size: 16px;
+    box-shadow: $box-shadow-center;
+}
+
+@media only screen and (min-width: 768px) {
+    .Create-input {
+        font-size: 16px;
+    }
+}

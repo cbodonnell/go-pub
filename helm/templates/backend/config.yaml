@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-pub-config
+data:
+  server_name: {{ .Values.serverName }}
+  db_host: go-pub-postgres-service
+  redis_host: go-pub-redis-service
+  auth_endpoint: http://go-auth-service/auth/
+  client_endpoint: http://go-pub-client-service
+  rsa_public_key: /etc/rsa/public.pem
+  rsa_private_key: /etc/rsa/private.pem
+  upload_dir: /app/uploads

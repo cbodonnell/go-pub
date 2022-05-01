@@ -1,0 +1,25 @@
+@import '../../variables.scss';
+
+.Note-content {
+    padding: 0px 12px;
+    overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+.Note a {
+    color: var(--secondary-color);
+}
+
+// .Note-in-reply-to {
+//     overflow-wrap: inherit;
+//     overflow: hidden;
+// }
+
+// .Note-replies {
+//     padding: 0px 12px;
+// }
+
+// .Note-view-more {
+//     margin-left: 18px;
+//     text-align: center;
+// }

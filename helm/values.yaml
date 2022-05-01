@@ -1,0 +1,9 @@
+# Default values for go-pub.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# TODO: make this more elegant (80/443 -> http/https)
+serverName: "localhost"
+
+authHcaptcha: ""
+authRegister: "true"

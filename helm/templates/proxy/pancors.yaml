@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pancors-config
+data:
+  auth_endpoint: http://go-auth-service/auth/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pancors
+  labels:
+    app: pancors
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pancors
+  template:
+    metadata:
+      labels:
+        app: pancors
+    spec:
+      containers:
+      - name: pancors
+        image: cheebz/pancors
+        resources: # TODO: Determine eventually
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AUTH_ENDPOINT
+          valueFrom: 
+            configMapKeyRef:
+              name: pancors-config
+              key: auth_endpoint
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pancors-service
+spec:
+  selector:
+    app: pancors
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

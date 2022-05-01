@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-pub-client
+  labels:
+    app: go-pub-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-pub-client
+  template:
+    metadata:
+      labels:
+        app: go-pub-client
+      annotations:
+        configSha: {{ include (print $.Template.BasePath "/client/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: go-pub-client
+        image: cheebz/go-pub-client
+        resources: # TODO: Determine eventually
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_AUTH_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-client-config
+              key: auth_url
+        - name: REACT_APP_AUTH_HCAPTCHA
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-client-config
+              key: auth_hcaptcha
+        - name: REACT_APP_AUTH_REGISTER
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-client-config
+              key: auth_register
+        - name: REACT_APP_ACTIVITY_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-client-config
+              key: activity_url
+        - name: REACT_APP_PROXY_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: go-pub-client-config
+              key: proxy_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-pub-client-service
+spec:
+  selector:
+    app: go-pub-client
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

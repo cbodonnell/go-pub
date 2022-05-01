@@ -1,0 +1,29 @@
+@import '../../variables.scss';
+
+
+.Publish-label {
+    margin: 6px 0px;
+}
+
+.Publish-input {
+    border: 1px solid $dark-color;
+    border-radius: 5px;
+    padding: 6px;
+    margin-bottom: 6px;
+    background-color: $light-color;
+    color: $dark-color;
+    font-size: 16px;
+    box-shadow: $box-shadow-center;
+}
+
+@media only screen and (min-width: 768px) {
+    .Publish-input {
+        font-size: 16px;
+    }
+}
+
+.Publish-buttons {
+    margin-top: -6px;
+    display: flex;
+    justify-content: flex-end;
+}

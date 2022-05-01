@@ -1,0 +1,45 @@
+.OrderedCollection {
+    padding-bottom: 18px;
+}
+
+.OrderedCollection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.OrderedCollection-titleblock {
+    overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+.OrderedCollection-refresh {
+    margin-top: 0;
+    margin-left: 12px;
+}
+
+.page-button-container {
+    width: 25%;
+}
+
+.OrderedCollection-loading {
+    height: 56px;
+}
+
+.OrderedCollection-items-loading {
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.OrderedCollection-actor {
+    margin-bottom: 1rem;
+    display: flex;
+}
+
+.OrderedCollection-actor-name {
+    font-size: 16px;
+    margin-bottom: 6px;
+}

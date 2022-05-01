@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: go-auth-postgres-data-volume
+  labels:
+    app: go-auth-postgres
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  hostPath: # Not recommended for multi-node clusters
+    path: /tmp/go-auth/postgres-data
+  persistentVolumeReclaimPolicy: Retain # Recycle or Delete

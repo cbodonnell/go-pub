@@ -1,0 +1,274 @@
+@import "variables.scss";
+
+// TODO: Move this into a separate bootstrap-config.scss
+$grid-gutter-width: 0 !default;
+$border-width: 0 !default;
+$navbar-dark-color:                 rgba(var(--light-color), 1.0) !default;
+$navbar-dark-hover-color:           rgba(var(--secondary-color), 1.0) !default;
+$navbar-dark-active-color:          var(--light-color) !default;
+$navbar-dark-disabled-color:        rgba(var(--light-color), .25) !default;
+$navbar-dark-toggler-icon-bg:       url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'><path stroke='#{var(--primary-color)}' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg>") !default;
+$navbar-dark-toggler-border-color:  rgba(var(--light-color), .1) !default;
+$navbar-dark-brand-color:           var(--primary-color) !default;
+$navbar-dark-brand-hover-color:     var(--primary-color) !default;
+$dropdown-color:                    var(--light-color) !default;
+$dropdown-bg:                       var(--dark-color) !default;
+$dropdown-border-color:             none !default;
+$dropdown-border-radius:            none !default;
+$dropdown-box-shadow:               $box-shadow-center !default;
+
+$dropdown-link-color:               var(--light-color) !default;
+$dropdown-link-hover-color:         rgba(var(--secondary-color), .75) !default;
+$dropdown-link-hover-bg:            none !default;
+
+$dropdown-link-active-color:        var(--light-color) !default;
+$dropdown-link-active-bg:           none !default;
+
+$dropdown-link-disabled-color:      rgba(var(--light-color), .25) !default;
+
+@import "~bootstrap/scss/bootstrap";
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  // position: fixed;
+  background-color: var(--dark-color);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--dark-color);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+:root {
+  --primary-color: #{$primary-color};
+  --secondary-color: #{$secondary-color};
+  --tertiary-color: #{$tertiary-color};
+  --dark-color: #{$dark-color};
+  --light-color: #{$light-color};
+}
+
+.inverted {
+  --primary-color: #{$tertiary-color};
+  --secondary-color: #{$quaternary-color};
+  --tertiary-color: #{$secondary-color};
+  --dark-color: #{$light-color};
+  --light-color: #{$dark-color};
+}
+
+/* Extra small devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) { }
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) { }
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) { }
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) { }
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) { }
+
+// /* For mobile phones: */
+// [class*="col-"] {
+//   padding: 0 !important;
+// }
+
+.h-100vh {
+  height: 100vh !important;
+}
+
+.h-full {
+  height: 100% !important;
+}
+
+.w-full {
+  width: 100% !important;
+}
+
+.m-0 {
+  margin: 0 !important;
+}
+
+.ml-0 { margin-left: 0 !important }
+.mr-0 { margin-right: 0 !important }
+.mt-0 { margin-top: 0 !important }
+.mb-0 { margin-bottom: 0 !important }
+.ml-1 { margin-left: 1rem !important }
+.mr-1 { margin-right: 1rem !important }
+.mt-1 { margin-top: 1rem !important }
+.mb-1 { margin-bottom: 1rem !important }
+
+.p-0 {
+  padding: 0 !important;
+}
+
+.t-0 { top: 0 !important }
+.b-0 { bottom: 0 !important }
+.l-0 { left: 0 !important }
+.r-0 { right: 0 !important }
+
+.hidden {
+  display: none !important;
+}
+
+.flex {
+  display: flex !important;
+}
+
+.flex-col {
+  flex-direction: column !important;
+}
+
+.flex-row {
+  flex-direction: row !important;
+}
+
+.flex-initial {
+  flex: 0 1 auto !important;
+}
+
+.flex-auto {
+  flex: 1 1 auto !important;
+}
+
+.justify-center {
+  justify-content: center !important;
+}
+
+.justify-start {
+  justify-content: flex-start !important;
+}
+
+.justify-end {
+  justify-content: flex-end !important;
+}
+
+.justify-between {
+  justify-content: space-between !important;
+}
+
+.items-center {
+  align-items: center !important;
+}
+
+.items-start {
+  align-items: flex-start !important;
+}
+
+.items-end {
+  align-items: flex-end !important;
+}
+
+.relative {
+  position: relative !important;
+}
+
+.absolute {
+  position: absolute !important;
+}
+
+.fixed {
+  position: fixed !important;
+}
+
+.overflow-auto {
+  overflow: auto !important;
+}
+
+.overflow-hidden {
+  overflow: hidden !important;
+}
+
+.break-word {
+  overflow-wrap: break-word !important;
+}
+
+.overflow-visible {
+  overflow: visible !important;
+}
+
+.mw-1600 {
+  max-width: 1600px !important;
+}
+
+.box-shadow {
+  box-shadow: $box-shadow-center !important;
+}
+
+.link,
+.link:hover {
+  color: var(--secondary-color) !important;
+}
+
+.button {
+  margin-top: 12px;
+  margin-left: 12px;
+  z-index: 10;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 12px;
+  background-color: var(--primary-color);
+  color: var(--dark-color);
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: $box-shadow-center;
+}
+
+.button-primary {
+  z-index: inherit;
+  background-color: var(--primary-color);
+  color: var(--dark-color);
+}
+
+.button-icon {
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  svg {
+      height: 20px;
+      width: 20px;
+      color: var(--dark-color);
+      path {
+        stroke: var(--dark-color);
+      }
+      polygon {
+        fill:  var(--dark-color);
+      }
+  }
+}
+
+.button-secondary {
+  z-index: inherit;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  font-weight: normal;
+}
+
+.button-tertiary {
+  z-index: inherit;
+  background-color: var(--secondary-color);
+  color: var(--dark-color);
+  font-weight: normal;
+}
+
+.button-secondary-light {
+  z-index: inherit;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  font-weight: normal;
+}

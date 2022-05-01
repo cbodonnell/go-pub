@@ -1,0 +1,87 @@
+@import "../../variables.scss";
+
+
+.Auth-error {
+    color: red;
+}
+
+.Auth-error,
+.Auth-label {
+    margin: 6px 0px;
+}
+
+.Auth-input {
+    border: 1px solid $dark-color;
+    border-radius: 5px;
+    padding: 6px;
+    margin-bottom: 6px;
+    background-color: $light-color;
+    color: $dark-color;
+    font-size: 16px;
+    box-shadow: $box-shadow-center;
+}
+
+@media only screen and (min-width: 768px) {
+    .Auth-input {
+        font-size: 16px;
+    }
+}
+
+.Auth-hCaptcha {
+    margin-top: 18px;
+}
+
+.Auth-button {
+    z-index: 10;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 12px;
+    margin-left: 6px;
+    background-color: var(--primary-color);
+    color: var(--dark-color);
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: $box-shadow-center;
+}
+
+.Auth-launch-button {
+    height: 48px;
+}
+
+@media only screen and (min-width: 768px) {
+    .Auth-launch-button {
+        height: auto;
+        font-size: 16px;
+    }
+}
+
+// TODO: Make some more general class for app-wide buttons
+.Auth-form-button-primary {
+    z-index: inherit;
+    padding: 6px 12px;
+    background-color: var(--primary-color);
+    color: var(--dark-color);
+}
+
+.Auth-form-button-secondary {
+    z-index: inherit;
+    padding: 6px 12px;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    font-weight: normal;
+}
+
+.Auth-register-link {
+    color: var(--secondary-color);
+}
+
+.Auth-dialog .modal-content {
+    background-color: var(--dark-color);
+    color: var(--light-color);
+    box-shadow: $box-shadow-center;
+
+    .modal-header .close {
+        color: var(--light-color);
+        text-shadow: $text-shadow-center;
+    }
+}

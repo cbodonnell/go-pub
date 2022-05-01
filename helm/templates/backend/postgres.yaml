@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-pub-postgres
+  labels:
+    app: go-pub-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-pub-postgres
+  template:
+    metadata:
+      labels:
+        app: go-pub-postgres
+    spec:
+      containers:
+      - name: go-pub-postgres
+        image: postgres:latest
+        resources: # TODO: Determine eventually
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom: 
+            secretKeyRef:
+              name: go-pub-postgres
+              key: db_name
+        - name: POSTGRES_USER
+          valueFrom: 
+            secretKeyRef:
+              name: go-pub-postgres
+              key: db_user
+        - name: POSTGRES_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: go-pub-postgres
+              key: db_password
+        volumeMounts:
+        - name: go-pub-postgres-data-volume
+          mountPath: "/var/lib/postgresql/data/"
+        - name: go-pub-postgres-initdb-volume
+          mountPath: "/docker-entrypoint-initdb.d/"
+      volumes:
+        - name: go-pub-postgres-initdb-volume
+          configMap:
+            name: go-pub-postgres-initdb
+        - name: go-pub-postgres-data-volume
+          persistentVolumeClaim:
+            claimName: go-pub-postgres-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: go-pub-postgres-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      app: go-pub-postgres
+---
+apiVersion: v1
+data:
+  init_db.sql: "-- Initialization Script\n\n-- Create tables\n\n-- public.users definition\n\nDO
+    $$\nBEGIN\n\n\tCREATE TABLE IF NOT EXISTS public.users (\n\t\tid serial NOT NULL,\n\t\t\"name\"
+    text NOT NULL,\n\t\tdiscoverable bool NOT NULL,\n\t\tiri text NOT NULL,\n\t\tCONSTRAINT
+    users_pkey PRIMARY KEY (id)\n\t);\n\n\t-- public.objects definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.objects (\n\t\tid serial NOT NULL,\n\t\t\"type\" text
+    NULL,\n\t\tiri text NULL,\n\t\t\"content\" text NULL,\n\t\tattributed_to text
+    NULL,\n\t\tin_reply_to text NULL,\n\t\t\"name\" text NULL,\n\t\tCONSTRAINT objects_pkey
+    PRIMARY KEY (id)\n\t);\n\n\t-- public.object_files definition\n\n\tCREATE TABLE
+    IF NOT EXISTS public.object_files (\n\t\tid serial NOT NULL,\n\t\tobject_id int4
+    NOT NULL,\n\t\tcreated timestamptz NOT NULL,\n\t\t\"name\" text NOT NULL,\n\t\tuuid
+    text NOT NULL,\n\t\t\"type\" text NOT NULL,\n\t\thref text NOT NULL,\n\t\tmedia_type
+    text NOT NULL,\n\t\tCONSTRAINT object_files_pkey PRIMARY KEY (id)\n\t);\n\n\tALTER
+    TABLE public.object_files DROP CONSTRAINT IF EXISTS object_files_object_id_fk;\n\tALTER
+    TABLE public.object_files ADD CONSTRAINT object_files_object_id_fk FOREIGN KEY
+    (object_id) REFERENCES public.objects(id);\n\n\t-- public.activities definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.activities (\n\t\tid serial NOT NULL,\n\t\t\"type\"
+    text NOT NULL,\n\t\tactor text NOT NULL,\n\t\tobject_id int4 NOT NULL,\n\t\tiri
+    text NULL,\n\t\tCONSTRAINT outbox_activities_pkey PRIMARY KEY (id)\n\t);\n\n\tALTER
+    TABLE public.activities DROP CONSTRAINT IF EXISTS activities_object_id_fk;\n\tALTER
+    TABLE public.activities ADD CONSTRAINT activities_object_id_fk FOREIGN KEY (object_id)
+    REFERENCES public.objects(id);\n\n\t-- public.activities_to definition\n\n\tCREATE
+    TABLE IF NOT EXISTS public.activities_to (\n\t\tid serial NOT NULL,\n\t\tactivity_id
+    int4 NOT NULL,\n\t\tiri text NOT NULL,\n\t\tCONSTRAINT outbox_to_pkey PRIMARY
+    KEY (id)\n\t);\n\n\tALTER TABLE public.activities_to DROP CONSTRAINT IF EXISTS
+    activities_to_activity_id_fk;\n\tALTER TABLE public.activities_to ADD CONSTRAINT
+    activities_to_activity_id_fk FOREIGN KEY (activity_id) REFERENCES public.activities(id);\n\nEND\n$$\n\n"
+kind: ConfigMap
+metadata:
+  name: go-pub-postgres-initdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-pub-postgres-service
+spec:
+  selector:
+    app: go-pub-postgres
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

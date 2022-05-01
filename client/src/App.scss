@@ -1,0 +1,56 @@
+@import "./variables.scss";
+
+.App-header {
+  background-color: var(--dark-color);
+  color: var(--light-color);
+}
+
+.App-content {
+  // height: calc(100% - 112px);
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+// @media only screen and (min-width: 768px) {
+//   .App-content {
+//     height: calc(100% - 56px);
+//   }
+// }
+
+.App-page {
+  width: 100%;
+  height: fit-content;
+  max-width: 1200px;
+  padding: 1.125rem;
+}
+
+.App-title {
+  text-shadow: $text-shadow-center;
+}
+
+.App-link {
+  color: var(--secondary-color);
+}
+
+.Header-Auth-button {
+  z-index: 10;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 12px;
+  height: 48px;
+  margin: 8px 0px;
+  background-color: var(--primary-color);
+  color: var(--dark-color);
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: $box-shadow-center;
+}
+
+@media only screen and (min-width: 768px) {
+  .Header-Auth-button {
+      height: auto;
+      margin: auto;
+      margin-left: 8px;
+  }
+}

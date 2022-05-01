@@ -1,0 +1,83 @@
+@import "../../variables.scss";
+
+.Header-spacer {
+    height: 56px;
+    width: 100%;
+}
+
+.Header-Navbar {
+    z-index: 10;
+    background-color: var(--dark-color);
+    box-shadow: $box-shadow-center;
+}
+
+.Header-brand {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold
+}
+
+.Header-button-bar {
+    display: none;
+}
+
+@media only screen and (min-width: 768px) {
+    .Header-button-bar {
+        display: flex;
+    }
+}
+
+.Header-navbar-toggle {
+    border: 0;
+    background-color: transparent;
+    padding: 0;
+
+    svg {
+        height: 32px;
+        width: 32px;
+        color: var(--primary-color);
+    }
+}
+
+.Header-Auth-button {
+    z-index: 10;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 12px;
+    height: 48px;
+    margin: 8px 0px;
+    background-color: var(--primary-color);
+    color: var(--dark-color);
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: $box-shadow-center;
+}
+
+@media only screen and (min-width: 768px) {
+
+    .Header-navbar-toggle {
+        display: none;
+    }
+
+    .Header-Auth-button {
+        height: auto;
+        margin: auto;
+        margin-left: 0px 0px 0px 8px;
+    }
+}
+
+.Header-NavDropdown {
+    font-weight: bold;
+
+    @media only screen and (min-width: 768px) {
+        .dropdown-menu {
+            box-shadow: 0 4px 4px 0 #00000033, 0 6px 6px 0 #00000030;
+            left: -58px;
+            top: 48px;
+        }
+
+        a:hover {
+            color: var(--secondary-color);
+        }
+    }
+    
+}
