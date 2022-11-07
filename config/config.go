@@ -16,6 +16,7 @@ var (
 		"PORT":                  80,
 		"LOG_FILE":              "",
 		"SERVER_NAME":           "localhost",
+		"PROTOCOL":              "http",
 		"AUTH":                  "http://localhost:8080/auth/",
 		"CLIENT":                "http://localhost:3000",
 		"ENDPOINT_USERS":        "users",
@@ -57,10 +58,10 @@ var (
 
 // Configuration struct
 type Configuration struct {
-	Debug          bool   `mapstructure:"DEBUG"`
-	Port           int    `mapstructure:"PORT"`
-	LogFile        string `mapstructure:"LOG_FILE"`
-	Protocol       string
+	Debug          bool        `mapstructure:"DEBUG"`
+	Port           int         `mapstructure:"PORT"`
+	LogFile        string      `mapstructure:"LOG_FILE"`
+	Protocol       string      `mapstructure:"PROTOCOL"`
 	ServerName     string      `mapstructure:"SERVER_NAME"`
 	Auth           string      `mapstructure:"AUTH"`
 	Client         string      `mapstructure:"CLIENT"`
@@ -133,12 +134,16 @@ func ReadConfig(ENV string) (Configuration, error) {
 	if err != nil {
 		return config, err
 	}
-	// Set Protocol based on SSL config
-	if config.SSLCert == "" {
-		config.Protocol = "http"
-	} else {
-		config.Protocol = "https"
+
+	if config.Protocol == "" {
+		// Set Protocol based on SSL config
+		if config.SSLCert == "" {
+			config.Protocol = "http"
+		} else {
+			config.Protocol = "https"
+		}
 	}
+
 	// Read RSA keys
 	config.RSAPublicKey, err = readKey(config.RSAPublicKey)
 	if err != nil {

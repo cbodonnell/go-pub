@@ -19,7 +19,6 @@ type Repository interface {
 	QueryFollowingTotalItemsByUserName(name string) (int, error)
 	QueryFollowingByUserName(name string, pageNum int) ([]string, error)
 	QueryLikedTotalItemsByUserName(name string) (int, error)
-	// QueryLikedByUserName(name string, pageNum int) ([]models.Object, error)
 	QueryLikedByUserName(name string, pageNum int) ([]string, error)
 	QueryActivity(ID int) (models.Activity, error)
 	QueryObject(ID int) (models.Object, error)
