@@ -8,7 +8,7 @@ import (
 
 func ParseLimitedPayload(r io.Reader, n int64) ([]byte, error) {
 	var buf bytes.Buffer
-	limiter := io.LimitReader(r, 1*1024*1024)
+	limiter := io.LimitReader(r, n)
 	_, err := io.Copy(&buf, limiter)
 	if err != nil {
 		return nil, err
