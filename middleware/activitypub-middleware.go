@@ -17,17 +17,19 @@ import (
 )
 
 type ActivityPubMiddleware struct {
-	client   string
-	auth     string
-	response responses.Response
+	auth             string
+	response         responses.Response
+	acceptMiddleware func(h http.Handler) http.Handler
 }
 
 func NewActivityPubMiddleware(_client string, _auth string, _response responses.Response) Middleware {
-	return &ActivityPubMiddleware{
-		client:   _client,
-		auth:     _auth,
-		response: _response,
+	m := &ActivityPubMiddleware{
+		auth:             _auth,
+		response:         _response,
+		acceptMiddleware: createAcceptMiddleware(_client),
 	}
+
+	return m
 }
 
 func (m *ActivityPubMiddleware) CreateCORSMiddleware(allowedOrigins []string) func(h http.Handler) http.Handler {
@@ -36,6 +38,19 @@ func (m *ActivityPubMiddleware) CreateCORSMiddleware(allowedOrigins []string) fu
 		AllowCredentials: true,
 	})
 	return cors.Handler
+}
+
+func createAcceptMiddleware(client string) func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		if client != "" {
+			if isValidURL(client) {
+				return http.HandlerFunc(proxyToClient(client))
+			} else {
+				return http.HandlerFunc(serveStaticSite(client))
+			}
+		}
+		return http.HandlerFunc(h.ServeHTTP)
+	}
 }
 
 // isValidURL tests a string to determine if it is a well-structured url or not.
@@ -53,35 +68,33 @@ func isValidURL(toTest string) bool {
 	return true
 }
 
-func (m *ActivityPubMiddleware) AcceptMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := activitypub.CheckAccept(r.Header)
-		if err != nil {
-			// if not requesting activity serve client app
-			if isValidURL(m.client) {
-				origin, _ := url.Parse(m.client)
-				director := func(req *http.Request) {
-					req.URL.Scheme = origin.Scheme
-					req.URL.Host = origin.Host
-				}
-				proxy := &httputil.ReverseProxy{Director: director}
-				proxy.ServeHTTP(w, r)
-				return
-			} else {
-				// else try and serve static site
-				fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
-				if !fileRegexp.MatchString(r.URL.Path) {
-					// if not file, serve client app
-					http.ServeFile(w, r, fmt.Sprintf("%s/index.html", m.client))
-				} else {
-					// else serve static file
-					http.FileServer(http.Dir(m.client)).ServeHTTP(w, r)
-				}
-				return
-			}
+func proxyToClient(client string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		origin, _ := url.Parse(client)
+		director := func(req *http.Request) {
+			req.URL.Scheme = origin.Scheme
+			req.URL.Host = origin.Host
 		}
-		h.ServeHTTP(w, r)
-	})
+		proxy := &httputil.ReverseProxy{Director: director}
+		proxy.ServeHTTP(w, r)
+	}
+}
+
+func serveStaticSite(path string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
+		if !fileRegexp.MatchString(r.URL.Path) {
+			// if not file, serve client app
+			http.ServeFile(w, r, fmt.Sprintf("%s/index.html", path))
+		} else {
+			// else serve static file
+			http.FileServer(http.Dir(path)).ServeHTTP(w, r)
+		}
+	}
+}
+
+func (m *ActivityPubMiddleware) AcceptMiddleware(h http.Handler) http.Handler {
+	return m.acceptMiddleware(h)
 }
 
 func (m *ActivityPubMiddleware) ContentTypeMiddleware(h http.Handler) http.Handler {
