@@ -43,11 +43,19 @@ func (m *ActivityPubMiddleware) CreateCORSMiddleware(allowedOrigins []string) fu
 func createAcceptMiddleware(client string) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		if client != "" {
-			if isValidURL(client) {
-				return http.HandlerFunc(proxyToClient(client))
-			} else {
-				return http.HandlerFunc(serveStaticSite(client))
-			}
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// check Accept header and proxy to client if it's not there
+				err := activitypub.CheckAccept(r.Header)
+				if err != nil {
+					if isValidURL(client) {
+						proxyToClient(client)
+					} else {
+						serveStaticSite(client)
+					}
+				} else {
+					h.ServeHTTP(w, r)
+				}
+			})
 		}
 		return http.HandlerFunc(h.ServeHTTP)
 	}
