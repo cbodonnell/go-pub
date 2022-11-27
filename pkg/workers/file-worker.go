@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/repositories"
+	"github.com/cheebz/go-pub/pkg/config"
+	"github.com/cheebz/go-pub/pkg/repositories"
 )
 
 type FileWorker struct {

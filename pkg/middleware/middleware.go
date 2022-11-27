@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/cheebz/go-pub/services"
+	"github.com/cheebz/go-pub/pkg/services"
 )
 
 type Middleware interface {

@@ -6,8 +6,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/models"
+	"github.com/cheebz/go-pub/pkg/config"
+	"github.com/cheebz/go-pub/pkg/models"
 )
 
 type ActivityPubResource struct {

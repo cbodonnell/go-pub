@@ -1,7 +1,7 @@
 # Build stage
 FROM golang:1-alpine as builder
 
-RUN apk add git
+RUN apk add git make
 
 # RUN apk update && apk add openssl
 # RUN mkdir /etc/ssl/go-pub
@@ -14,7 +14,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . ./
-RUN go build
+RUN make build
 
 # Production stage
 FROM alpine:latest as prod
@@ -22,7 +22,7 @@ FROM alpine:latest as prod
 RUN mkdir /app
 WORKDIR /app
 
-COPY --from=builder /app/go-pub ./
+COPY --from=builder /app/bin/pub ./
 # COPY --from=builder /etc/ssl/go-pub/* ./certs/
 
-CMD [ "./go-pub" ]
+CMD [ "./pub" ]

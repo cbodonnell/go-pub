@@ -1,6 +1,6 @@
 package resources
 
-import "github.com/cheebz/go-pub/models"
+import "github.com/cheebz/go-pub/pkg/models"
 
 type Resource interface {
 	ParseResource(resource string) (string, error)

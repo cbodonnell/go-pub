@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/cheebz/arb"
-	"github.com/cheebz/go-pub/cache"
-	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/models"
-	"github.com/cheebz/go-pub/utils"
+	"github.com/cheebz/go-pub/pkg/cache"
+	"github.com/cheebz/go-pub/pkg/config"
+	"github.com/cheebz/go-pub/pkg/models"
+	"github.com/cheebz/go-pub/pkg/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 

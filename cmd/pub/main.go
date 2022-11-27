@@ -7,17 +7,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cheebz/go-pub/activitypub"
-	"github.com/cheebz/go-pub/cache"
-	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/handlers"
-	"github.com/cheebz/go-pub/logging"
-	"github.com/cheebz/go-pub/middleware"
-	"github.com/cheebz/go-pub/repositories"
-	"github.com/cheebz/go-pub/resources"
-	"github.com/cheebz/go-pub/responses"
-	"github.com/cheebz/go-pub/services"
-	"github.com/cheebz/go-pub/workers"
+	"github.com/cheebz/go-pub/pkg/activitypub"
+	"github.com/cheebz/go-pub/pkg/cache"
+	"github.com/cheebz/go-pub/pkg/config"
+	"github.com/cheebz/go-pub/pkg/handlers"
+	"github.com/cheebz/go-pub/pkg/logging"
+	"github.com/cheebz/go-pub/pkg/middleware"
+	"github.com/cheebz/go-pub/pkg/repositories"
+	"github.com/cheebz/go-pub/pkg/resources"
+	"github.com/cheebz/go-pub/pkg/responses"
+	"github.com/cheebz/go-pub/pkg/services"
+	"github.com/cheebz/go-pub/pkg/workers"
 )
 
 func main() {
@@ -58,7 +58,7 @@ func main() {
 	r := handler.GetRouter()
 
 	// Run server
-	log.Println(fmt.Sprintf("Serving on port %d", conf.Port))
+	log.Printf("Serving on port %d\n", conf.Port)
 
 	// Set log file
 	if conf.LogFile != "" {

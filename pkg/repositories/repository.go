@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"github.com/cheebz/arb"
-	"github.com/cheebz/go-pub/models"
+	"github.com/cheebz/go-pub/pkg/models"
 )
 
 type Repository interface {

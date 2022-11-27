@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cheebz/go-pub/config"
+	"github.com/cheebz/go-pub/pkg/config"
 	"github.com/go-redis/redis/v7"
 )
 

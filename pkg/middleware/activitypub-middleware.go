@@ -9,9 +9,9 @@ import (
 	"regexp"
 
 	"github.com/cheebz/go-auth-helpers"
-	"github.com/cheebz/go-pub/activitypub"
-	"github.com/cheebz/go-pub/responses"
-	"github.com/cheebz/go-pub/services"
+	"github.com/cheebz/go-pub/pkg/activitypub"
+	"github.com/cheebz/go-pub/pkg/responses"
+	"github.com/cheebz/go-pub/pkg/services"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )

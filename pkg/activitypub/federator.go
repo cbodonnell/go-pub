@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/cheebz/go-pub/config"
-	"github.com/cheebz/go-pub/models"
-	"github.com/cheebz/go-pub/repositories"
+	"github.com/cheebz/go-pub/pkg/config"
+	"github.com/cheebz/go-pub/pkg/models"
+	"github.com/cheebz/go-pub/pkg/repositories"
 	"github.com/cheebz/sigs"
 )
 

@@ -3,7 +3,7 @@ package responses
 import (
 	"net/http"
 
-	"github.com/cheebz/go-pub/logging"
+	"github.com/cheebz/go-pub/pkg/logging"
 )
 
 type ActivityPubResponse struct {

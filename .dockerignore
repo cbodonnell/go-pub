@@ -1,17 +1,23 @@
 # Configuration
 config.*.json
 *.env
+*.pem
 
 # Binaries
-go-pub
-go-pub.exe
+bin/
 
 # Static files
 static/*
 
-# Jenkinsfile
-Jenkinsfile
+# Deployment files
+deploy/
+
+# Scripts
+scripts/
 
 # Database volumes
 *.sql
 postgres-data/*
+
+# Vendor files
+vendor/

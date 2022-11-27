@@ -2,8 +2,8 @@ package services
 
 import (
 	"github.com/cheebz/arb"
-	"github.com/cheebz/go-pub/media"
-	"github.com/cheebz/go-pub/models"
+	"github.com/cheebz/go-pub/pkg/media"
+	"github.com/cheebz/go-pub/pkg/models"
 )
 
 type Service interface {
