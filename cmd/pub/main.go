@@ -1,74 +1,44 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"strings"
 
-	"github.com/cheebz/go-pub/pkg/activitypub"
-	"github.com/cheebz/go-pub/pkg/cache"
-	"github.com/cheebz/go-pub/pkg/config"
-	"github.com/cheebz/go-pub/pkg/handlers"
-	"github.com/cheebz/go-pub/pkg/logging"
-	"github.com/cheebz/go-pub/pkg/middleware"
-	"github.com/cheebz/go-pub/pkg/repositories"
-	"github.com/cheebz/go-pub/pkg/resources"
-	"github.com/cheebz/go-pub/pkg/responses"
-	"github.com/cheebz/go-pub/pkg/services"
-	"github.com/cheebz/go-pub/pkg/workers"
+	"github.com/cheebz/go-pub/cmd/pub/commands"
 )
 
 func main() {
-	// Get configuration
-	ENV := os.Getenv("ENV")
-	conf, err := config.ReadConfig(ENV)
-	if err != nil {
-		log.Fatal(err)
+	rootCmd := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	var logLevel string
+	rootCmd.StringVar(&logLevel, "log-level", "info", "Set the logging level (\"debug\"|\"info\"|\"warn\"|\"error\"|\"fatal\") (default \"info\")")
+
+	rootCmd.Usage = func() {
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintf(os.Stderr, "Usage: %s <command>\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintf(os.Stderr, "Commands:\n")
+		fmt.Fprintf(os.Stderr, "  serve    Start the server\n")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintf(os.Stderr, "Flags:\n")
+		rootCmd.PrintDefaults()
+		fmt.Fprintln(os.Stderr, "")
 	}
 
-	// create cache layer
-	cache := cache.NewRedisCache(conf)
-	err = cache.FlushDB()
-	if err != nil {
-		log.Println("failed to flush cache:", err)
-	}
-	// create repository
-	repo := repositories.NewPSQLRepository(conf, cache)
-	defer repo.Close()
-	// create file worker
-	fileWorker := workers.NewFileWorker(conf, repo)
-	go fileWorker.Start()
-	// create federator
-	federator := activitypub.NewFederator(conf, repo)
-	// create service
-	service := services.NewActivityPubService(conf, repo, federator)
-	// create response writer
-	response := responses.NewActivityPubResponse(conf.Debug)
-	// create middleware helper
-	middle := middleware.NewActivityPubMiddleware(conf.Client, conf.Auth, response)
-	// create resource generator
-	resource := resources.NewActivityPubResource(conf)
-	// create handler (TODO: Make an options struct??)
-	handler := handlers.NewMuxHandler(conf, middle, service, resource, response)
-	if conf.AllowedOrigins != "" {
-		handler.AllowCORS(strings.Split(conf.AllowedOrigins, ","))
-	}
-	r := handler.GetRouter()
+	rootCmd.Parse(os.Args[1:])
 
-	// Run server
-	log.Printf("Serving on port %d\n", conf.Port)
-
-	// Set log file
-	if conf.LogFile != "" {
-		logFile := logging.SetLogFile(conf.LogFile)
-		defer logFile.Close()
+	command := rootCmd.Arg(0)
+	if command == "" {
+		rootCmd.Usage()
+		os.Exit(1)
 	}
 
-	// TLS
-	if conf.SSLCert == "" {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r))
+	switch command {
+	case "serve":
+		log.Fatal(commands.Serve())
+	default:
+		log.Fatalf("Unknown command: %s\n", command)
 	}
-	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%d", conf.Port), conf.SSLCert, conf.SSLKey, r))
 }
