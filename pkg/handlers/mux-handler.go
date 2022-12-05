@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime/pprof"
 	"strconv"
 
 	"github.com/cheebz/go-pub/pkg/activitypub"
@@ -87,6 +88,9 @@ func (h *MuxHandler) setupRoutes() {
 	cGet := h.router.NewRoute().Subrouter() // -> authenticated checks GET
 	uPost.Use(jwtUsernameMiddleware)
 	cGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Check), h.CheckActivity).Methods("GET", "OPTIONS")
+
+	mon := h.router.NewRoute().Subrouter() // -> monitoring
+	mon.HandleFunc("/monitoring/goroutines", h.GetGoroutines).Methods("GET", "OPTIONS")
 
 	sink := h.router.NewRoute().Subrouter() // -> sink to handle all other routes
 	sink.Use(h.middleware.AcceptMiddleware)
@@ -358,7 +362,7 @@ func (h *MuxHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 
 func (h *MuxHandler) PostInbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)[nameParam]
-	payload, err := utils.ParseLimitedPayload(r.Body, 1*1024*1024)
+	payload, err := utils.ParseLimitedPayload(r.Body, 1*1024*1024) // TODO: make this configurable
 	if err != nil {
 		h.response.BadRequest(w, err)
 		return
@@ -383,7 +387,7 @@ func (h *MuxHandler) PostInbox(w http.ResponseWriter, r *http.Request) {
 
 func (h *MuxHandler) PostOutbox(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)[nameParam]
-	payload, err := utils.ParseLimitedPayload(r.Body, 1*1024*1024)
+	payload, err := utils.ParseLimitedPayload(r.Body, 1*1024*1024) // TODO: make this configurable
 	if err != nil {
 		h.response.BadRequest(w, err)
 		return
@@ -452,6 +456,10 @@ func (h *MuxHandler) CheckActivity(w http.ResponseWriter, r *http.Request) {
 	checkResponse := h.resource.GenerateCheckResponse(activityIRI)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(checkResponse)
+}
+
+func (h *MuxHandler) GetGoroutines(w http.ResponseWriter, r *http.Request) {
+	pprof.Lookup("goroutine").WriteTo(w, 2)
 }
 
 func (h *MuxHandler) SinkHandler(w http.ResponseWriter, r *http.Request) {

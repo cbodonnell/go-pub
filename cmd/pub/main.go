@@ -13,11 +13,11 @@ func main() {
 	rootCmd := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	var logLevel string
-	rootCmd.StringVar(&logLevel, "log-level", "info", "Set the logging level (\"debug\"|\"info\"|\"warn\"|\"error\"|\"fatal\") (default \"info\")")
+	rootCmd.StringVar(&logLevel, "log-level", "info", "Set the logging level (\"debug\"|\"info\"|\"warn\"|\"error\"|\"fatal\")")
 
 	rootCmd.Usage = func() {
 		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintf(os.Stderr, "Usage: %s <command>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <command> [flags]\n", os.Args[0])
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintf(os.Stderr, "Commands:\n")
 		fmt.Fprintf(os.Stderr, "  serve    Start the server\n")

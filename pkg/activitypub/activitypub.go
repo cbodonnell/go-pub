@@ -142,6 +142,7 @@ func Find(iri string, headers http.Header) (arb.Arb, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	arb, err := arb.Read(resp.Body)
 	if err != nil {
 		return nil, err
@@ -168,6 +169,7 @@ func FindProp(a arb.Arb, prop string, headers http.Header) (arb.Arb, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	arb, err := arb.Read(resp.Body)
 	if err != nil {
 		return nil, err
@@ -320,6 +322,7 @@ func FetchPublicKeyString(keyId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 	key, err := arb.Read(resp.Body)
 	if err != nil {
 		return "", err
