@@ -12,6 +12,7 @@ uploads/*
 
 # Database volumes
 postgres-data/*
+pgdata/
 
 # Vendor files
 vendor/

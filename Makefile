@@ -6,3 +6,7 @@ serve:
 
 container:
 	docker build -f deploy/docker/Dockerfile -t cheebz/go-pub .
+
+postgres:
+	./scripts/docker_postgres.sh
+
