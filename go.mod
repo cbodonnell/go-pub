@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/cheebz/arb v0.1.9
-	github.com/cheebz/go-auth-helpers v0.0.2
+	github.com/cheebz/go-auth-helpers v0.0.3
 	github.com/cheebz/sigs v0.3.2
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/google/uuid v1.3.0

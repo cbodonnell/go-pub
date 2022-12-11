@@ -4,8 +4,7 @@ config.*.json
 *.pem
 
 # Binaries
-go-pub
-go-pub.exe
+bin/
 
 # Static files
 static/*
@@ -13,3 +12,7 @@ uploads/*
 
 # Database volumes
 postgres-data/*
+pgdata/
+
+# Vendor files
+vendor/
