@@ -85,8 +85,8 @@ type Endpoints struct {
 	Objects     string `mapstructure:"ENDPOINT_OBJECTS"`
 	Inbox       string `mapstructure:"ENDPOINT_INBOX"`
 	Outbox      string `mapstructure:"ENDPOINT_OUTBOX"`
-	Following   string `mapstructure:"ENDPOINT_FOLLOWERS"`
-	Followers   string `mapstructure:"ENDPOINT_FOLLOWING"`
+	Following   string `mapstructure:"ENDPOINT_FOLLOWING"`
+	Followers   string `mapstructure:"ENDPOINT_FOLLOWERS"`
 	Liked       string `mapstructure:"ENDPOINT_LIKED"`
 	UploadMedia string `mapstructure:"ENDPOINT_UPLOAD_MEDIA"`
 	Uploads     string `mapstructure:"ENDPOINT_UPLOADS"`
