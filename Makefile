@@ -10,3 +10,6 @@ container:
 postgres:
 	./scripts/docker_postgres.sh
 
+redis:
+	./scripts/docker_redis.sh
+
