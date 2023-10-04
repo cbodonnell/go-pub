@@ -87,6 +87,127 @@ func (r *PSQLRepository) CreateUser(name string) (string, error) {
 	return iri, nil
 }
 
+func (r *PSQLRepository) QueryFeedTotalItemsByUserName(name string) (int, error) {
+	var count int
+	_, err := r.cache.Get(fmt.Sprintf("feed-totalItems-%s", name), &count)
+	if err == nil {
+		return count, nil
+	}
+	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("feed-totalItems-%s", name)))
+
+	sql := `SELECT COUNT(act.*)
+	FROM activities as act
+	JOIN activities_to AS act_to ON act_to.activity_id = act.id
+	INNER JOIN (
+		SELECT obj.iri
+		FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Follow'
+		AND act.iri NOT IN (
+			SELECT obj.iri FROM activities AS act
+			JOIN objects AS obj ON obj.id = act.object_id
+			WHERE act.type = 'Undo'
+		)
+		AND act.actor = $1
+	) as following ON following.iri = act.actor
+	WHERE act_to.iri = $1`
+
+	err = r.db.QueryRow(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+	).Scan(&count)
+	if err != nil {
+		return count, err
+	}
+
+	err = r.cache.Set(fmt.Sprintf("feed-totalItems-%s", name), count)
+	if err != nil {
+		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("feed-totalItems-%s", name)))
+	}
+
+	return count, nil
+}
+
+func (r *PSQLRepository) QueryFeedByUserName(name string, pageNum int) ([]models.Activity, error) {
+	var activities []models.Activity
+	r.cache.Get(fmt.Sprintf("feed-%s-%d", name, pageNum), &activities)
+	if activities != nil {
+		return activities, nil
+	}
+	log.Println(fmt.Sprintf("no cached %s", fmt.Sprintf("feed-%s-%d", name, pageNum)))
+
+	sql := `SELECT act.*
+	FROM activities as act
+	JOIN activities_to AS act_to ON act_to.activity_id = act.id
+	INNER JOIN (
+		SELECT obj.iri
+		FROM activities AS act
+		JOIN objects AS obj ON obj.id = act.object_id
+		WHERE act.type = 'Follow'
+		AND act.iri NOT IN (
+			SELECT obj.iri FROM activities AS act
+			JOIN objects AS obj ON obj.id = act.object_id
+			WHERE act.type = 'Undo'
+		)
+		AND act.actor = $1
+	) as following ON following.iri = act.actor
+	WHERE act_to.iri = $1
+	ORDER BY id DESC
+	OFFSET $2
+	LIMIT $3`
+
+	rows, err := r.db.Query(context.Background(), sql,
+		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
+		pageNum*r.conf.PageLength,
+		r.conf.PageLength+1,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var activity_id int
+		var object_id int
+		activity := models.NewActivity()
+		err = rows.Scan(
+			&activity_id,
+			&activity.Type,
+			&activity.Actor,
+			&object_id,
+			&activity.Id,
+		)
+		if err != nil {
+			return activities, err
+		}
+		object_iri, err := r.queryObjectIRIById(object_id)
+		if err != nil {
+			return activities, err
+		}
+		object, err := r.queryObjectByIRI(object_iri)
+		if err != nil {
+			activity.ChildObject = object_iri
+
+		} else {
+			activity.ChildObject = object
+		}
+		activity.To, err = r.queryToByActivityId(activity_id)
+		if err != nil {
+			return activities, err
+		}
+		activities = append(activities, activity)
+	}
+	err = rows.Err()
+	if err != nil {
+		return activities, err
+	}
+
+	err = r.cache.Set(fmt.Sprintf("feed-%s-%d", name, pageNum), activities)
+	if err != nil {
+		log.Println(fmt.Sprintf("error setting cache %s", fmt.Sprintf("feed-%s-%d", name, pageNum)))
+	}
+
+	return activities, nil
+}
+
 func (r *PSQLRepository) QueryInboxTotalItemsByUserName(name string) (int, error) {
 	var count int
 	_, err := r.cache.Get(fmt.Sprintf("inbox-totalItems-%s", name), &count)

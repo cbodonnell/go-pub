@@ -9,6 +9,7 @@ type Handler interface {
 	AllowCORS(allowedOrigins []string)
 	GetWebFinger(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
+	GetFeed(w http.ResponseWriter, r *http.Request)
 	GetInbox(w http.ResponseWriter, r *http.Request)
 	GetOutbox(w http.ResponseWriter, r *http.Request)
 	GetFollowing(w http.ResponseWriter, r *http.Request)

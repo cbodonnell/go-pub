@@ -22,6 +22,7 @@ var (
 		"ENDPOINT_USERS":        "users",
 		"ENDPOINT_ACTIVITIES":   "activities",
 		"ENDPOINT_OBJECTS":      "objects",
+		"ENDPOINT_FEED":         "feed",
 		"ENDPOINT_INBOX":        "inbox",
 		"ENDPOINT_OUTBOX":       "outbox",
 		"ENDPOINT_FOLLOWING":    "following",
@@ -83,6 +84,7 @@ type Endpoints struct {
 	Users       string `mapstructure:"ENDPOINT_USERS"`
 	Activities  string `mapstructure:"ENDPOINT_ACTIVITIES"`
 	Objects     string `mapstructure:"ENDPOINT_OBJECTS"`
+	Feed        string `mapstructure:"ENDPOINT_FEED"`
 	Inbox       string `mapstructure:"ENDPOINT_INBOX"`
 	Outbox      string `mapstructure:"ENDPOINT_OUTBOX"`
 	Following   string `mapstructure:"ENDPOINT_FOLLOWING"`

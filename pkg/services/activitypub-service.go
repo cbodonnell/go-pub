@@ -51,6 +51,14 @@ func (s *ActivityPubService) CreateUser(name string) (string, error) {
 	return s.repo.CreateUser(name)
 }
 
+func (s *ActivityPubService) GetFeedTotalItemsByUserName(name string) (int, error) {
+	return s.repo.QueryFeedTotalItemsByUserName(name)
+}
+
+func (s *ActivityPubService) GetFeedByUserName(name string, pageNum int) ([]models.Activity, error) {
+	return s.repo.QueryFeedByUserName(name, pageNum)
+}
+
 func (s *ActivityPubService) GetInboxTotalItemsByUserName(name string) (int, error) {
 	return s.repo.QueryInboxTotalItemsByUserName(name)
 }

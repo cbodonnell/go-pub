@@ -72,6 +72,7 @@ func (h *MuxHandler) setupRoutes() {
 
 	aGet := get.NewRoute().Subrouter()
 	aGet.Use(jwtUsernameMiddleware)
+	aGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Feed), h.GetFeed).Methods("GET", "OPTIONS")
 	aGet.HandleFunc(fmt.Sprintf("/%s/{%s:[[:alnum:]]+}/%s", h.conf.Endpoints.Users, nameParam, h.conf.Endpoints.Inbox), h.GetInbox).Methods("GET", "OPTIONS")
 
 	aPost := post.NewRoute().Subrouter()
@@ -141,6 +142,39 @@ func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	actor := h.resource.GenerateActor(user.Name)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(actor)
+}
+
+func (h *MuxHandler) GetFeed(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)[nameParam]
+	page := r.FormValue("page")
+	if page == "" {
+		totalItems, err := h.service.GetFeedTotalItemsByUserName(name)
+		if err != nil {
+			h.response.InternalServerError(w, err)
+			return
+		}
+		feed := h.resource.GenerateOrderedCollection(name, h.conf.Endpoints.Feed, totalItems)
+		w.Header().Set("Content-Type", activitypub.ContentType)
+		json.NewEncoder(w).Encode(feed)
+		return
+	}
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		h.response.BadRequest(w, err)
+		return
+	}
+	activities, err := h.service.GetFeedByUserName(name, pageNum)
+	if err != nil {
+		h.response.InternalServerError(w, err)
+		return
+	}
+	orderedItems := make([]interface{}, len(activities))
+	for i, activity := range activities {
+		orderedItems[i] = activity
+	}
+	feedPage := h.resource.GenerateOrderedCollectionPage(name, h.conf.Endpoints.Feed, orderedItems, pageNum)
+	w.Header().Set("Content-Type", activitypub.ContentType)
+	json.NewEncoder(w).Encode(feedPage)
 }
 
 func (h *MuxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {

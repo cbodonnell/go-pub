@@ -10,6 +10,8 @@ type Repository interface {
 	QueryUserByName(name string) (models.User, error)
 	CheckUser(name string) error
 	CreateUser(name string) (string, error)
+	QueryFeedTotalItemsByUserName(name string) (int, error)
+	QueryFeedByUserName(name string, pageNum int) ([]models.Activity, error)
 	QueryInboxTotalItemsByUserName(name string) (int, error)
 	QueryInboxByUserName(name string, pageNum int) ([]models.Activity, error)
 	QueryOutboxTotalItemsByUserName(name string) (int, error)

@@ -11,6 +11,8 @@ type Service interface {
 	GetUserByName(name string) (models.User, error)
 	CheckUser(name string) error
 	CreateUser(name string) (string, error)
+	GetFeedTotalItemsByUserName(name string) (int, error)
+	GetFeedByUserName(name string, pageNum int) ([]models.Activity, error)
 	GetInboxTotalItemsByUserName(name string) (int, error)
 	GetInboxByUserName(name string, pageNum int) ([]models.Activity, error)
 	GetOutboxTotalItemsByUserName(name string) (int, error)
