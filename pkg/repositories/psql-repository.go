@@ -110,7 +110,8 @@ func (r *PSQLRepository) QueryFeedTotalItemsByUserName(name string) (int, error)
 		)
 		AND act.actor = $1
 	) as following ON following.iri = act.actor
-	WHERE act_to.iri = $1`
+	WHERE act_to.iri = $1
+	AND ACT.type IN ('Create', 'Announce')`
 
 	err = r.db.QueryRow(context.Background(), sql,
 		fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name),
@@ -151,6 +152,7 @@ func (r *PSQLRepository) QueryFeedByUserName(name string, pageNum int) ([]models
 		AND act.actor = $1
 	) as following ON following.iri = act.actor
 	WHERE act_to.iri = $1
+	AND ACT.type IN ('Create', 'Announce')
 	ORDER BY id DESC
 	OFFSET $2
 	LIMIT $3`
@@ -861,7 +863,12 @@ func (r *PSQLRepository) CreateInboxActivity(activityArb arb.Arb, objectArb arb.
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
+	err = r.cache.Del(
+		fmt.Sprintf("inbox-%s-*", name),
+		fmt.Sprintf("inbox-totalItems-%s", name),
+		fmt.Sprintf("feed-%s-*", name),
+		fmt.Sprintf("feed-totalItems-%s", name),
+	)
 	if err != nil {
 		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
@@ -911,7 +918,12 @@ func (r *PSQLRepository) CreateInboxReferenceActivity(activityArb arb.Arb, objec
 	if err != nil {
 		return nil, err
 	}
-	err = r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
+	err = r.cache.Del(
+		fmt.Sprintf("inbox-%s-*", name),
+		fmt.Sprintf("inbox-totalItems-%s", name),
+		fmt.Sprintf("feed-%s-*", name),
+		fmt.Sprintf("feed-totalItems-%s", name),
+	)
 	if err != nil {
 		log.Println(fmt.Sprintf("error deleting cache %s and %s", fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name)))
 	}
@@ -1117,7 +1129,12 @@ func (r *PSQLRepository) AddActivityTo(activityIRI string, recipient string) err
 	// If local clear inbox cache of user
 	if utils.IsFromHost(recipient, r.conf.ServerName) {
 		name := strings.TrimPrefix(recipient, fmt.Sprintf("%s://%s/%s/", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users))
-		return r.cache.Del(fmt.Sprintf("inbox-%s-*", name), fmt.Sprintf("inbox-totalItems-%s", name))
+		return r.cache.Del(
+			fmt.Sprintf("inbox-%s-*", name),
+			fmt.Sprintf("inbox-totalItems-%s", name),
+			fmt.Sprintf("feed-%s-*", name),
+			fmt.Sprintf("feed-totalItems-%s", name),
+		)
 	}
 	return nil
 }
