@@ -223,7 +223,7 @@ func (s *ActivityPubService) SaveOutboxActivity(activityArb arb.Arb, name string
 			}
 			go s.federator.Federate(models.Federation{Name: name, Recipient: actor, Activity: responseArb})
 		}
-	case "Like", "Undo":
+	case "Announce", "Like", "Undo":
 		activityArb, err = s.repo.CreateOutboxReferenceActivity(activityArb, name)
 		if err != nil {
 			return activityArb, err

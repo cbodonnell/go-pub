@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, User, LogIn, LogOut, Moon, Sun, PenSquare, Inbox } from 'lucide-react'
+import { Home, User, LogIn, LogOut, Moon, Sun, PenSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth'
 import { useThemeStore } from '@/store/theme'
@@ -50,7 +50,7 @@ export function Sidebar() {
 
       <NavItem to="/" icon={Home} label="Home" />
       {user && <NavItem to={`/users/${user.username}`} icon={User} label="Profile" />}
-      {user && <NavItem to={`/users/${user.username}/inbox`} icon={Inbox} label="Inbox" />}
+
 
       <div className="flex-1" />
 

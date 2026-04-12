@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, User, PenSquare, Inbox, LogIn } from 'lucide-react'
+import { Home, User, PenSquare, LogIn } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { Composer } from '@/components/composer/Composer'
@@ -34,7 +34,7 @@ export function BottomNav() {
     <>
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 flex items-center px-2 pb-safe">
         <NavItem to="/" icon={Home} label="Home" />
-        {user && <NavItem to={`/users/${user.username}/inbox`} icon={Inbox} label="Inbox" />}
+
 
         {user ? (
           <button

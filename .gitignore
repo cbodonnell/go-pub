@@ -10,6 +10,12 @@ bin/
 static/*
 uploads/*
 
+# Generated RSA keys
+keys/
+
+# Embedded client dist (built by Dockerfile, not committed)
+internal/static/dist/
+
 # Database volumes
 postgres-data/*
 pgdata/

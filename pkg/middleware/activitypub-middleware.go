@@ -3,13 +3,14 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
 
-	"github.com/cheebz/go-auth-helpers"
 	"github.com/cheebz/go-pub/pkg/activitypub"
+	"github.com/cheebz/go-pub/pkg/auth"
 	"github.com/cheebz/go-pub/pkg/responses"
 	"github.com/cheebz/go-pub/pkg/services"
 	"github.com/gorilla/mux"
@@ -17,91 +18,105 @@ import (
 )
 
 type ActivityPubMiddleware struct {
-	auth             string
+	authService      auth.Service
 	response         responses.Response
 	acceptMiddleware func(h http.Handler) http.Handler
 }
 
-func NewActivityPubMiddleware(_client string, _auth string, _response responses.Response) Middleware {
+// NewActivityPubMiddleware creates the middleware.
+// client can be:
+//   - a URL ("http://...") → reverse proxy to that address
+//   - a directory path ("./client/dist") → serve static files
+//   - empty string → fall back to embeddedFS (nil embeddedFS = 404 for non-AP requests)
+func NewActivityPubMiddleware(client string, embeddedFS fs.FS, authService auth.Service, response responses.Response) Middleware {
 	m := &ActivityPubMiddleware{
-		auth:             _auth,
-		response:         _response,
-		acceptMiddleware: createAcceptMiddleware(_client),
+		authService:      authService,
+		response:         response,
+		acceptMiddleware: createAcceptMiddleware(client, embeddedFS),
 	}
-
 	return m
 }
 
 func (m *ActivityPubMiddleware) CreateCORSMiddleware(allowedOrigins []string) func(h http.Handler) http.Handler {
-	cors := cors.New(cors.Options{
+	c := cors.New(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowCredentials: true,
 	})
-	return cors.Handler
+	return c.Handler
 }
 
-func createAcceptMiddleware(client string) func(h http.Handler) http.Handler {
+func createAcceptMiddleware(client string, embeddedFS fs.FS) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
-		if client != "" {
-			serveClient := createServeClient(client)
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// check Accept header and serve client if it's not there
-				err := activitypub.CheckAccept(r.Header)
-				if err != nil {
-					serveClient(w, r)
-					return
-				}
-				h.ServeHTTP(w, r)
-			})
+		serveClient := createServeClient(client, embeddedFS)
+		if serveClient == nil {
+			return http.HandlerFunc(h.ServeHTTP)
 		}
-		return http.HandlerFunc(h.ServeHTTP)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := activitypub.CheckAccept(r.Header); err != nil {
+				serveClient(w, r)
+				return
+			}
+			h.ServeHTTP(w, r)
+		})
 	}
 }
 
-func createServeClient(client string) func(w http.ResponseWriter, r *http.Request) {
-	if isValidURL(client) {
-		return proxyToClient(client)
+func createServeClient(client string, embeddedFS fs.FS) func(w http.ResponseWriter, r *http.Request) {
+	if client != "" {
+		if isValidURL(client) {
+			return proxyToClient(client)
+		}
+		return serveStaticSite(client)
 	}
-	return serveStaticSite(client)
+	if embeddedFS != nil {
+		return serveEmbedded(embeddedFS)
+	}
+	return nil
 }
 
-// isValidURL tests a string to determine if it is a well-structured url or not.
-func isValidURL(toTest string) bool {
-	_, err := url.ParseRequestURI(toTest)
-	if err != nil {
-		return false
-	}
-
-	u, err := url.Parse(toTest)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	return true
+func isValidURL(s string) bool {
+	u, err := url.ParseRequestURI(s)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
 func proxyToClient(client string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin, _ := url.Parse(client)
-		director := func(req *http.Request) {
+		proxy := &httputil.ReverseProxy{Director: func(req *http.Request) {
 			req.URL.Scheme = origin.Scheme
 			req.URL.Host = origin.Host
-		}
-		proxy := &httputil.ReverseProxy{Director: director}
+		}}
 		proxy.ServeHTTP(w, r)
 	}
 }
 
 func serveStaticSite(path string) func(w http.ResponseWriter, r *http.Request) {
+	fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
 	return func(w http.ResponseWriter, r *http.Request) {
-		fileRegexp := regexp.MustCompile(`\.[a-zA-Z]*$`)
 		if !fileRegexp.MatchString(r.URL.Path) {
-			// if not file, serve client app
 			http.ServeFile(w, r, fmt.Sprintf("%s/index.html", path))
 		} else {
-			// else serve static file
 			http.FileServer(http.Dir(path)).ServeHTTP(w, r)
 		}
+	}
+}
+
+func serveEmbedded(fsys fs.FS) func(w http.ResponseWriter, r *http.Request) {
+	fileServer := http.FileServer(http.FS(fsys))
+	fileRegexp := regexp.MustCompile(`\.[a-zA-Z0-9]+$`)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !fileRegexp.MatchString(r.URL.Path) {
+			// SPA: all non-asset paths serve index.html so client-side routing works
+			data, err := fs.ReadFile(fsys, "index.html")
+			if err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write(data) //nolint:errcheck
+			return
+		}
+		fileServer.ServeHTTP(w, r)
 	}
 }
 
@@ -111,8 +126,7 @@ func (m *ActivityPubMiddleware) AcceptMiddleware(h http.Handler) http.Handler {
 
 func (m *ActivityPubMiddleware) ContentTypeMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := activitypub.CheckContentType(r.Header)
-		if err != nil {
+		if err := activitypub.CheckContentType(r.Header); err != nil {
 			m.response.BadRequest(w, err)
 			return
 		}
@@ -120,42 +134,35 @@ func (m *ActivityPubMiddleware) ContentTypeMiddleware(h http.Handler) http.Handl
 	})
 }
 
+// CreateJwtUsernameMiddleware guards routes that require the authenticated user
+// to match the {name} path parameter.
 func (m *ActivityPubMiddleware) CreateJwtUsernameMiddleware(nameParam string) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authMap, err := auth.Authenticate(w, r, m.auth)
+			claims, err := m.authService.Authenticate(w, r)
 			if err != nil {
-				m.response.UnauthorizedRequest(w, err)
+				m.response.UnauthorizedRequest(w, errors.New("authentication required"))
 				return
 			}
-			if s, ok := authMap["username"].(string); !ok {
-				m.response.UnauthorizedRequest(w, errors.New("invalid response from auth endpoint"))
+			name := mux.Vars(r)[nameParam]
+			if claims.Username != name {
+				m.response.UnauthorizedRequest(w, errors.New("that's not yours"))
 				return
-			} else {
-				name := mux.Vars(r)[nameParam]
-				if s != name {
-					m.response.UnauthorizedRequest(w, errors.New("that's not yours"))
-					return
-				}
-				h.ServeHTTP(w, r)
 			}
+			h.ServeHTTP(w, r)
 		})
 	}
 }
 
+// CreateUserMiddleware auto-creates an ActivityPub user record for any
+// authenticated request where one doesn't exist yet.
 func (m *ActivityPubMiddleware) CreateUserMiddleware(service services.Service) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authMap, err := auth.Authenticate(w, r, m.auth)
-			if err != nil {
-				h.ServeHTTP(w, r)
-				return
-			}
-			if username, ok := authMap["username"].(string); ok {
-				err = service.CheckUser(username)
-				if err != nil {
-					_, err = service.CreateUser(username)
-					if err != nil {
+			claims, err := m.authService.GetClaims(r)
+			if err == nil {
+				if err := service.CheckUser(claims.Username); err != nil {
+					if _, err := service.CreateUser(claims.Username); err != nil {
 						m.response.BadRequest(w, err)
 						return
 					}

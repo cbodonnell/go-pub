@@ -69,7 +69,7 @@ func (m *Media) Save(dir string) error {
 		return err
 	}
 
-	f, err := os.Create(fmt.Sprintf(dir + m.UUID + m.FileExt))
+	f, err := os.Create(dir + m.UUID + m.FileExt)
 	if err != nil {
 		return err
 	}

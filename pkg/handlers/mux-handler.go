@@ -3,11 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"runtime/pprof"
 	"strconv"
 
 	"github.com/cheebz/go-pub/pkg/activitypub"
+	"github.com/cheebz/go-pub/pkg/auth"
 	"github.com/cheebz/go-pub/pkg/config"
 	"github.com/cheebz/go-pub/pkg/media"
 	"github.com/cheebz/go-pub/pkg/middleware"
@@ -20,26 +23,28 @@ import (
 )
 
 type MuxHandler struct {
-	conf       config.Configuration
-	middleware middleware.Middleware
-	service    services.Service
-	resource   resources.Resource
-	response   responses.Response
-	router     *mux.Router
+	conf        config.Configuration
+	middleware  middleware.Middleware
+	service     services.Service
+	resource    resources.Resource
+	response    responses.Response
+	authHandler *auth.Handler
+	router      *mux.Router
 }
 
 var (
 	nameParam = "name"
 )
 
-func NewMuxHandler(_config config.Configuration, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response) Handler {
+func NewMuxHandler(_config config.Configuration, _middleware middleware.Middleware, _service services.Service, _resource resources.Resource, _response responses.Response, _authHandler *auth.Handler) Handler {
 	h := &MuxHandler{
-		conf:       _config,
-		middleware: _middleware,
-		service:    _service,
-		resource:   _resource,
-		response:   _response,
-		router:     mux.NewRouter(),
+		conf:        _config,
+		middleware:  _middleware,
+		service:     _service,
+		resource:    _resource,
+		response:    _response,
+		authHandler: _authHandler,
+		router:      mux.NewRouter(),
 	}
 	h.setupRoutes()
 	return h
@@ -47,6 +52,17 @@ func NewMuxHandler(_config config.Configuration, _middleware middleware.Middlewa
 
 func (h *MuxHandler) setupRoutes() {
 	h.router.HandleFunc("/healthz", h.HealthCheck).Methods("GET", "OPTIONS")
+
+	// Auth routes
+	h.router.HandleFunc("/auth/", h.authHandler.CurrentUser).Methods("GET", "OPTIONS")
+	h.router.HandleFunc("/auth/login", h.authHandler.Login).Methods("POST", "OPTIONS")
+	h.router.HandleFunc("/auth/register", h.authHandler.Register).Methods("POST", "OPTIONS")
+	h.router.HandleFunc("/auth/logout", h.authHandler.Logout).Methods("GET", "OPTIONS")
+	h.router.HandleFunc("/auth/logoutAll", h.authHandler.LogoutAll).Methods("GET", "OPTIONS")
+	h.router.HandleFunc("/auth/password", h.authHandler.ChangePassword).Methods("POST", "OPTIONS")
+
+	// Proxy route — fetches external URLs on behalf of the client (CORS bypass)
+	h.router.HandleFunc("/proxy/", h.ProxyHandler).Methods("GET", "OPTIONS")
 
 	wf := h.router.NewRoute().Subrouter() // -> webfinger
 	wf.HandleFunc("/.well-known/webfinger", h.GetWebFinger).Methods("GET", "OPTIONS")
@@ -127,7 +143,7 @@ func (h *MuxHandler) GetWebFinger(w http.ResponseWriter, r *http.Request) {
 		h.response.NotFound(w, err)
 		return
 	}
-	webfinger := h.resource.GenerateWebFinger(user.Name)
+	webfinger := h.resource.GenerateWebFinger(user.Username)
 	w.Header().Set("Content-Type", "application/jrd+json")
 	json.NewEncoder(w).Encode(webfinger)
 }
@@ -139,7 +155,7 @@ func (h *MuxHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		h.response.NotFound(w, err)
 		return
 	}
-	actor := h.resource.GenerateActor(user.Name)
+	actor := h.resource.GenerateActor(user.Username)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(actor)
 }
@@ -219,12 +235,12 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	page := r.FormValue("page")
 	if page == "" {
-		totalItems, err := h.service.GetOutboxTotalItemsByUserName(user.Name)
+		totalItems, err := h.service.GetOutboxTotalItemsByUserName(user.Username)
 		if err != nil {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		outbox := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Outbox, totalItems)
+		outbox := h.resource.GenerateOrderedCollection(user.Username, h.conf.Endpoints.Outbox, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(outbox)
 		return
@@ -234,7 +250,7 @@ func (h *MuxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	activities, err := h.service.GetOutboxByUserName(user.Name, pageNum)
+	activities, err := h.service.GetOutboxByUserName(user.Username, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -257,12 +273,12 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 	page := r.FormValue("page")
 	if page == "" {
-		totalItems, err := h.service.GetFollowingTotalItemsByUserName(user.Name)
+		totalItems, err := h.service.GetFollowingTotalItemsByUserName(user.Username)
 		if err != nil {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		following := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Following, totalItems)
+		following := h.resource.GenerateOrderedCollection(user.Username, h.conf.Endpoints.Following, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(following)
 		return
@@ -272,7 +288,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	following, err := h.service.GetFollowingByUserName(user.Name, pageNum)
+	following, err := h.service.GetFollowingByUserName(user.Username, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -281,7 +297,7 @@ func (h *MuxHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range following {
 		orderedItems[i] = actor
 	}
-	followingPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Following, orderedItems, pageNum)
+	followingPage := h.resource.GenerateOrderedCollectionPage(user.Username, h.conf.Endpoints.Following, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followingPage)
 }
@@ -295,12 +311,12 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 	page := r.FormValue("page")
 	if page == "" {
-		totalItems, err := h.service.GetFollowersTotalItemsByUserName(user.Name)
+		totalItems, err := h.service.GetFollowersTotalItemsByUserName(user.Username)
 		if err != nil {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		followers := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Followers, totalItems)
+		followers := h.resource.GenerateOrderedCollection(user.Username, h.conf.Endpoints.Followers, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(followers)
 		return
@@ -310,7 +326,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	followers, err := h.service.GetFollowersByUserName(user.Name, pageNum)
+	followers, err := h.service.GetFollowersByUserName(user.Username, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -319,7 +335,7 @@ func (h *MuxHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	for i, actor := range followers {
 		orderedItems[i] = actor
 	}
-	followersPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Followers, orderedItems, pageNum)
+	followersPage := h.resource.GenerateOrderedCollectionPage(user.Username, h.conf.Endpoints.Followers, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(followersPage)
 }
@@ -333,12 +349,12 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 	}
 	page := r.FormValue("page")
 	if page == "" {
-		totalItems, err := h.service.GetLikedTotalItemsByUserName(user.Name)
+		totalItems, err := h.service.GetLikedTotalItemsByUserName(user.Username)
 		if err != nil {
 			h.response.InternalServerError(w, err)
 			return
 		}
-		liked := h.resource.GenerateOrderedCollection(user.Name, h.conf.Endpoints.Liked, totalItems)
+		liked := h.resource.GenerateOrderedCollection(user.Username, h.conf.Endpoints.Liked, totalItems)
 		w.Header().Set("Content-Type", activitypub.ContentType)
 		json.NewEncoder(w).Encode(liked)
 		return
@@ -348,7 +364,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 		h.response.BadRequest(w, err)
 		return
 	}
-	liked, err := h.service.GetLikedByUserName(user.Name, pageNum)
+	liked, err := h.service.GetLikedByUserName(user.Username, pageNum)
 	if err != nil {
 		h.response.InternalServerError(w, err)
 		return
@@ -357,7 +373,7 @@ func (h *MuxHandler) GetLiked(w http.ResponseWriter, r *http.Request) {
 	for i, activity := range liked {
 		orderedItems[i] = activity
 	}
-	likedPage := h.resource.GenerateOrderedCollectionPage(user.Name, h.conf.Endpoints.Liked, orderedItems, pageNum)
+	likedPage := h.resource.GenerateOrderedCollectionPage(user.Username, h.conf.Endpoints.Liked, orderedItems, pageNum)
 	w.Header().Set("Content-Type", activitypub.ContentType)
 	json.NewEncoder(w).Encode(likedPage)
 }
@@ -494,6 +510,34 @@ func (h *MuxHandler) CheckActivity(w http.ResponseWriter, r *http.Request) {
 
 func (h *MuxHandler) GetGoroutines(w http.ResponseWriter, r *http.Request) {
 	pprof.Lookup("goroutine").WriteTo(w, 2)
+}
+
+// ProxyHandler fetches an external URL on behalf of the client to avoid CORS issues.
+// Usage: GET /proxy/?url=<encoded-url>
+func (h *MuxHandler) ProxyHandler(w http.ResponseWriter, r *http.Request) {
+	rawURL := r.URL.Query().Get("url")
+	if rawURL == "" {
+		http.Error(w, "url query parameter required", http.StatusBadRequest)
+		return
+	}
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		http.Error(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+	resp, err := http.Get(rawURL) //nolint:gosec — URL is validated above
+	if err != nil {
+		http.Error(w, "proxy request failed", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+	for k, vs := range resp.Header {
+		for _, v := range vs {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body) //nolint:errcheck
 }
 
 func (h *MuxHandler) SinkHandler(w http.ResponseWriter, r *http.Request) {

@@ -43,12 +43,12 @@ type DataSource struct {
 	Dbname   string `json:"dbname"`
 }
 
-// User struct
+// User struct (ActivityPub user view — auth fields excluded)
 type User struct {
 	ID           int    `json:"id"`
-	Name         string `json:"name"`
+	Username     string `json:"username"`
 	Discoverable bool   `json:"discoverable"`
-	IRI          string `json:"url"`
+	IRI          string `json:"iri"`
 }
 
 // Group struct

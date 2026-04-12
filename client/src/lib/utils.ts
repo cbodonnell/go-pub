@@ -38,6 +38,7 @@ export function getHandle(actor: { preferredUsername?: string; id: string }): st
 }
 
 export function isLocal(url: string): boolean {
+  if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) return true
   const base = window.location.protocol + '//' + window.location.hostname
   return url.startsWith(base)
 }

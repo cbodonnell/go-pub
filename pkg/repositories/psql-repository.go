@@ -46,14 +46,14 @@ func (r *PSQLRepository) Close() {
 }
 
 func (r *PSQLRepository) QueryUserByName(name string) (models.User, error) {
-	sql := `SELECT * FROM users
-	WHERE name = $1
+	sql := `SELECT id, username, discoverable, iri FROM users
+	WHERE username = $1
 	LIMIT 1`
 
 	var user models.User
 	err := r.db.QueryRow(context.Background(), sql, name).Scan(
 		&user.ID,
-		&user.Name,
+		&user.Username,
 		&user.Discoverable,
 		&user.IRI,
 	)
@@ -64,8 +64,8 @@ func (r *PSQLRepository) QueryUserByName(name string) (models.User, error) {
 }
 
 func (r *PSQLRepository) CheckUser(name string) error {
-	sql := `SELECT 1 from users
-	WHERE name = $1`
+	sql := `SELECT 1 FROM users
+	WHERE username = $1 AND iri != ''`
 
 	var result int
 	_ = r.db.QueryRow(context.Background(), sql, name).Scan(&result)
@@ -76,10 +76,13 @@ func (r *PSQLRepository) CheckUser(name string) error {
 }
 
 func (r *PSQLRepository) CreateUser(name string) (string, error) {
-	sql := `INSERT INTO users (name, discoverable, iri)
-	VALUES ($1, true, $2)`
-
 	iri := fmt.Sprintf("%s://%s/%s/%s", r.conf.Protocol, r.conf.ServerName, r.conf.Endpoints.Users, name)
+	// User row already exists from auth registration; update the AP fields.
+	// If somehow called before auth registration, insert a placeholder row.
+	sql := `INSERT INTO users (username, password, created, uuid, discoverable, iri)
+	VALUES ($1, '', NOW(), gen_random_uuid()::text, true, $2)
+	ON CONFLICT (username) DO UPDATE SET discoverable = true, iri = EXCLUDED.iri`
+
 	_, err := r.db.Exec(context.Background(), sql, name, iri)
 	if err != nil {
 		return iri, err

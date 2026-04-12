@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useCollection } from '@/hooks/useCollection'
-import { ActivityItem } from './ActivityItem'
-import { PostCard } from './PostCard'
+import { ActivityItem, ExpandedObject } from './ActivityItem'
 import { ActorCard } from '@/components/profile/ActorCard'
 import { PostCardSkeleton } from '@/components/common/Skeleton'
 import { ErrorState } from '@/components/common/ErrorState'
@@ -85,12 +84,12 @@ export function FeedTimeline({ iri, itemType, withCredentials }: FeedTimelinePro
 
         if (typeof item === 'string') {
           if (itemType === 'Actor') return <ActorCard key={i} iri={item} />
-          if (itemType === 'Object') return <PostCard key={i} object={{ id: item, type: 'Note' }} />
+          if (itemType === 'Object') return <ExpandedObject key={i} value={item} />
           return <ActivityItem key={i} iri={item} />
         }
 
         if (resolvedType === 'Actor') return <ActorCard key={i} actor={item as APActor} />
-        if (resolvedType === 'Object') return <PostCard key={i} object={item as APObject} />
+        if (resolvedType === 'Object') return <ExpandedObject key={i} value={item as APObject} />
         return <ActivityItem key={i} activity={item as APActivity} />
       })}
 

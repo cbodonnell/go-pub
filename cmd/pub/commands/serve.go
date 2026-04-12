@@ -8,7 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cheebz/go-pub/internal/static"
 	"github.com/cheebz/go-pub/pkg/activitypub"
+	"github.com/cheebz/go-pub/pkg/auth"
 	"github.com/cheebz/go-pub/pkg/cache"
 	"github.com/cheebz/go-pub/pkg/config"
 	"github.com/cheebz/go-pub/pkg/handlers"
@@ -34,52 +36,49 @@ func Serve() error {
 
 	serveCmd.Parse(os.Args[2:])
 
-	// Get configuration
+	// Get configuration (also auto-generates RSA keys if absent)
 	ENV := os.Getenv("ENV")
 	conf, err := config.ReadConfig(ENV)
 	if err != nil {
 		return err
 	}
 
-	// create cache layer
-	cache := cache.NewRedisCache(conf)
-	err = cache.FlushDB()
-	if err != nil {
+	// Auth
+	authRepo := auth.NewPSQLRepository(conf)
+	jwtHelper := auth.NewJWTHelper(conf.JWTKey, conf.JWTMaxAge, conf.RefreshMaxAge, conf.SSLCert != "")
+	authService := auth.NewService(authRepo, jwtHelper, conf.RefreshMaxAge)
+	authHandler := auth.NewHandler(authService, conf)
+	go auth.NewPurgeWorker(authRepo).Start()
+
+	// Cache
+	redisCache := cache.NewRedisCache(conf)
+	if err := redisCache.FlushDB(); err != nil {
 		log.Println("failed to flush cache:", err)
 	}
-	// create repository
-	repo := repositories.NewPSQLRepository(conf, cache)
+
+	// ActivityPub
+	repo := repositories.NewPSQLRepository(conf, redisCache)
 	defer repo.Close()
-	// create file worker
 	fileWorker := workers.NewFileWorker(conf, repo)
 	go fileWorker.Start()
-	// create federator
 	federator := activitypub.NewFederator(conf, repo)
-	// create service
 	service := services.NewActivityPubService(conf, repo, federator)
-	// create response writer
 	response := responses.NewActivityPubResponse(conf.Debug)
-	// create middleware helper
-	middle := middleware.NewActivityPubMiddleware(conf.Client, conf.Auth, response)
-	// create resource generator
+	middle := middleware.NewActivityPubMiddleware(conf.Client, static.FS, authService, response)
 	resource := resources.NewActivityPubResource(conf)
-	// create handler (TODO: Make an options struct??)
-	handler := handlers.NewMuxHandler(conf, middle, service, resource, response)
+	handler := handlers.NewMuxHandler(conf, middle, service, resource, response, authHandler)
 	if conf.AllowedOrigins != "" {
 		handler.AllowCORS(strings.Split(conf.AllowedOrigins, ","))
 	}
 	r := handler.GetRouter()
 
-	// Run server
 	log.Printf("Serving on port %d\n", conf.Port)
 
-	// Set log file
 	if conf.LogFile != "" {
 		logFile := logging.SetLogFile(conf.LogFile)
 		defer logFile.Close()
 	}
 
-	// TLS
 	if conf.SSLCert == "" {
 		return http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r)
 	}

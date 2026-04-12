@@ -2,9 +2,14 @@ package config
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -13,12 +18,11 @@ import (
 var (
 	defaults = map[string]interface{}{
 		"DEBUG":                 true,
-		"PORT":                  80,
+		"PORT":                  8080,
 		"LOG_FILE":              "",
 		"SERVER_NAME":           "localhost",
 		"PROTOCOL":              "http",
-		"AUTH":                  "http://localhost:8080/auth/",
-		"CLIENT":                "http://localhost:3000",
+		"CLIENT":                "",
 		"ENDPOINT_USERS":        "users",
 		"ENDPOINT_ACTIVITIES":   "activities",
 		"ENDPOINT_OBJECTS":      "objects",
@@ -35,13 +39,16 @@ var (
 		"UPLOAD_DIR":            "./uploads/",
 		"SSL_CERT":              "",
 		"SSL_KEY":               "",
-		"DB_HOST":               "host",
+		"DB_HOST":               "localhost",
 		"DB_PORT":               5432,
-		"DB_NAME":               "database",
-		"DB_USER":               "user",
-		"DB_PASSWORD":           "password",
-		"RSA_PUBLIC_KEY":        "public.pem",
-		"RSA_PRIVATE_KEY":       "private.pem",
+		"DB_NAME":               "gopub",
+		"DB_USER":               "gopub",
+		"DB_PASSWORD":           "gopub",
+		"JWT_KEY":               "changeme",
+		"JWT_MAX_AGE":           1200,
+		"REFRESH_MAX_AGE":       2592000,
+		"RSA_PUBLIC_KEY":        "./keys/public.pem",
+		"RSA_PRIVATE_KEY":       "./keys/private.pem",
 		"REDIS_HOST":            "localhost",
 		"REDIS_PORT":            6379,
 		"REDIS_PASSWORD":        "",
@@ -49,13 +56,12 @@ var (
 		"REDIS_EXP_SECONDS":     3600,
 		"ALLOWED_ORIGINS":       "",
 		"PAGE_LENGTH":           10,
+		"REGISTER":              true,
 	}
 	configPaths = []string{
 		".",
 	}
 )
-
-// --- Configuration --- //
 
 // Configuration struct
 type Configuration struct {
@@ -64,7 +70,6 @@ type Configuration struct {
 	LogFile        string      `mapstructure:"LOG_FILE"`
 	Protocol       string      `mapstructure:"PROTOCOL"`
 	ServerName     string      `mapstructure:"SERVER_NAME"`
-	Auth           string      `mapstructure:"AUTH"`
 	Client         string      `mapstructure:"CLIENT"`
 	Endpoints      Endpoints   `mapstructure:",squash"`
 	UploadDir      string      `mapstructure:"UPLOAD_DIR"`
@@ -72,14 +77,16 @@ type Configuration struct {
 	SSLKey         string      `mapstructure:"SSL_KEY"`
 	Db             DataSource  `mapstructure:",squash"`
 	JWTKey         string      `mapstructure:"JWT_KEY"`
+	JWTMaxAge      int         `mapstructure:"JWT_MAX_AGE"`
+	RefreshMaxAge  int         `mapstructure:"REFRESH_MAX_AGE"`
 	RSAPublicKey   string      `mapstructure:"RSA_PUBLIC_KEY"`
 	RSAPrivateKey  string      `mapstructure:"RSA_PRIVATE_KEY"`
 	Redis          RedisConfig `mapstructure:",squash"`
 	AllowedOrigins string      `mapstructure:"ALLOWED_ORIGINS"`
 	PageLength     int         `mapstructure:"PAGE_LENGTH"`
+	Register       bool        `mapstructure:"REGISTER"`
 }
 
-// DataSource struct
 type Endpoints struct {
 	Users       string `mapstructure:"ENDPOINT_USERS"`
 	Activities  string `mapstructure:"ENDPOINT_ACTIVITIES"`
@@ -96,7 +103,6 @@ type Endpoints struct {
 	Check       string `mapstructure:"ENDPOINT_CHECK"`
 }
 
-// DataSource struct
 type DataSource struct {
 	Host     string `mapstructure:"DB_HOST"`
 	Port     int    `mapstructure:"DB_PORT"`
@@ -138,7 +144,6 @@ func ReadConfig(ENV string) (Configuration, error) {
 	}
 
 	if config.Protocol == "" {
-		// Set Protocol based on SSL config
 		if config.SSLCert == "" {
 			config.Protocol = "http"
 		} else {
@@ -146,7 +151,12 @@ func ReadConfig(ENV string) (Configuration, error) {
 		}
 	}
 
-	// Read RSA keys
+	// Auto-generate RSA keys if they don't exist
+	if err := ensureRSAKeys(config.RSAPublicKey, config.RSAPrivateKey); err != nil {
+		return config, fmt.Errorf("failed to ensure RSA keys: %w", err)
+	}
+
+	// Read RSA key contents
 	config.RSAPublicKey, err = readKey(config.RSAPublicKey)
 	if err != nil {
 		return config, err
@@ -156,6 +166,61 @@ func ReadConfig(ENV string) (Configuration, error) {
 		return config, err
 	}
 	return config, nil
+}
+
+// ensureRSAKeys generates a 2048-bit RSA key pair at the given paths if the
+// private key file does not already exist.
+func ensureRSAKeys(publicKeyPath, privateKeyPath string) error {
+	if _, err := os.Stat(privateKeyPath); err == nil {
+		return nil // already exists
+	}
+
+	log.Println("RSA keys not found — generating new key pair...")
+
+	if err := os.MkdirAll(filepath.Dir(privateKeyPath), 0700); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(publicKeyPath), 0700); err != nil {
+		return err
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	// Write private key
+	privFile, err := os.OpenFile(privateKeyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer privFile.Close()
+	if err := pem.Encode(privFile, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	}); err != nil {
+		return err
+	}
+
+	// Write public key
+	pubFile, err := os.OpenFile(publicKeyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer pubFile.Close()
+	pubBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return err
+	}
+	if err := pem.Encode(pubFile, &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubBytes,
+	}); err != nil {
+		return err
+	}
+
+	log.Printf("Generated RSA key pair: %s, %s", privateKeyPath, publicKeyPath)
+	return nil
 }
 
 func readKey(path string) (string, error) {

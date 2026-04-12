@@ -17,14 +17,8 @@ export default defineConfig({
       '/objects': 'http://localhost:8080',
       '/uploads': 'http://localhost:8080',
       '/.well-known': 'http://localhost:8080',
-      '/auth': {
-        target: 'http://localhost:8082',
-        rewrite: (path) => path.replace(/^\/auth/, ''),
-      },
-      '/proxy': {
-        target: 'http://localhost:8080',
-        rewrite: (path) => path.replace(/^\/proxy/, ''),
-      },
+      '/auth': 'http://localhost:8080',
+      '/proxy': 'http://localhost:8080',
     },
   },
 })
